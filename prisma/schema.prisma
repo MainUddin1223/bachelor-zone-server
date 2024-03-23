@@ -1,0 +1,129 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Auth {
+  id          Int           @id @default(autoincrement())
+  phone       String        @unique
+  password    String
+  name        String
+  role        Role          @default(user)
+  is_deleted  Boolean       @default(false)
+  teams       Team[]
+  Order       Order[]
+  Transaction Transaction[]
+  UserInfo    UserInfo[]
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  @@map("auth")
+}
+
+model UserInfo {
+  id          Int      @id @default(autoincrement())
+  address_id  Int
+  user_id     Int
+  user        Auth     @relation(fields: [user_id], references: [id])
+  is_in_team  Boolean  @default(false)
+  Balance     Int      @default(0)
+  team_id     Int
+  team_member Team     @relation(fields: [team_id], references: [id])
+  due         Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("userInfo")
+}
+
+model AdminInfo {
+  id        Int      @id @default(autoincrement())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Address {
+  id        Int      @id @default(autoincrement())
+  address   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  Team      Team[]
+
+  @@map("address")
+}
+
+model Team {
+  id         Int        @id @default(autoincrement())
+  name       String
+  address_id Int
+  address    Address?   @relation(fields: [address_id], references: [id])
+  member     Int        @default(0)
+  due_boxes  Int        @default(0)
+  leader_id  Int        @unique
+  leader     Auth       @relation(fields: [leader_id], references: [id])
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+  order      Order[]
+  userInfo   UserInfo[]
+
+  @@map("team")
+}
+
+model Order {
+  id            Int         @id @default(autoincrement())
+  user_id       Int
+  user          Auth        @relation(fields: [user_id], references: [id])
+  team_id       Int
+  status        OrderStatus @default(pending)
+  delivery_date String
+  team          Team        @relation(fields: [team_id], references: [id])
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@map("orders")
+}
+
+model Transaction {
+  id               Int             @id @default(autoincrement())
+  user_id          Int
+  user             Auth            @relation(fields: [user_id], references: [id])
+  amount           Int
+  date             DateTime        @default(now())
+  transaction_type TransactionType
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+
+  @@map("transactions")
+}
+
+model Expenses {
+  id           Int      @id @default(autoincrement())
+  product_name String
+  quantity     String
+  amount       Int
+  date         DateTime @default(now())
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("expenses")
+}
+
+enum Role {
+  admin
+  user
+}
+
+enum OrderStatus {
+  received
+  pending
+}
+
+enum TransactionType {
+  deposite
+  refund
+}
