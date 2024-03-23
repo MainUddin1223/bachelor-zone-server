@@ -5,3 +5,9 @@ export interface ILoginPayload {
 export interface ISignUpPayload extends ILoginPayload {
   name: string;
 }
+
+export interface IChangePasswordPayload {
+  oldPassword: string;
+  newPassword: string;
+  id: number
+}

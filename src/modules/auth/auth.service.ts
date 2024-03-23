@@ -1,11 +1,11 @@
-import { ILoginPayload, ISignUpPayload } from './auth.interface';
+import { IChangePasswordPayload, ILoginPayload, ISignUpPayload } from './auth.interface';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import ApiError from '../../utils/errorHandlers/apiError';
 import { StatusCodes } from 'http-status-codes';
 import { jwtToken } from '../../utils/jwtHelpers/jwtToken';
 import config from '../../utils/config';
-import { errorMessages } from './auth.constant';
+import { errorMessages, successMessage } from './auth.constant';
 
 const prisma = new PrismaClient();
 
@@ -88,11 +88,51 @@ const login = async (payload: ILoginPayload) => {
   return {
     accessToken,
     name: isUserExist.name,
-    email: isUserExist.phone,
+    phone: isUserExist.phone,
   };
+};
+
+const changePassword = async (payload: IChangePasswordPayload) => {
+  const { oldPassword, newPassword, id } = payload;
+  const hashedPassword = bcrypt.hashSync(newPassword, 10);
+  const isUserExist = await prisma.auth.findFirst({
+    where: {
+      id,
+    },
+  });
+  if (!isUserExist) {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      errorMessages.somethingWrongError
+    );
+  }
+
+  const isPasswordMatched = await bcrypt.compare(
+    oldPassword,
+    isUserExist.password
+  );
+  if (!isPasswordMatched) {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      errorMessages.somethingWrongError
+    );
+  } else {
+    const result = await prisma.auth.update({
+      where: {
+        id
+      },
+      data: {
+        password: hashedPassword
+      }
+    })
+    if (result) {
+      return { message: successMessage.changePasswordSuccess }
+    }
+  }
 };
 
 export const authService = {
   signUp,
   login,
+  changePassword
 };
