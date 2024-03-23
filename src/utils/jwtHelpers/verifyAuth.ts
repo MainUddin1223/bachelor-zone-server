@@ -42,6 +42,7 @@ const verifyAuthWithRole = (allowedRoles: string[]) => {
   };
 };
 
+
 const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
   const token = req.headers.authorization;
   if (!token) {
