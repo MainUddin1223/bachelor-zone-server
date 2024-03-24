@@ -6,5 +6,8 @@ const router = express.Router();
 
 router.route('/sign-up').post(authController.signUp);
 router.route('/login').post(authController.login);
-router.route('/change-password').post(verifyAuth, authController.changePassword);
+router
+  .route('/change-password')
+  .post(verifyAuth, authController.changePassword);
+
 export default { authRouter: router };

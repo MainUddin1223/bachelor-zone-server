@@ -4,8 +4,9 @@ import { adminController } from './admin.controller';
 
 const router = express.Router();
 
-router.route('/add-category').post(verifyAdmin, adminController.addCategory);
-router.route('/add-quiz/:id').post(verifyAdmin, adminController.addQuiz);
-router.route('/get-statics').get(verifyAdmin, adminController.getStatics);
+router
+  .route('/address')
+  .post(verifyAdmin, adminController.addAddress)
+  .patch(verifyAdmin, adminController.updateAddress);
 
 export default { adminRouter: router };
