@@ -9,5 +9,5 @@ export interface ISignUpPayload extends ILoginPayload {
 export interface IChangePasswordPayload {
   oldPassword: string;
   newPassword: string;
-  id: number
+  id: number;
 }

@@ -1,4 +1,8 @@
-import { IChangePasswordPayload, ILoginPayload, ISignUpPayload } from './auth.interface';
+import {
+  IChangePasswordPayload,
+  ILoginPayload,
+  ISignUpPayload,
+} from './auth.interface';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 import ApiError from '../../utils/errorHandlers/apiError';
@@ -26,10 +30,7 @@ const signUp = async (payload: ISignUpPayload) => {
   });
 
   if (isExist) {
-    throw new ApiError(
-      StatusCodes.FORBIDDEN,
-      errorMessages.numberExistError
-    );
+    throw new ApiError(StatusCodes.FORBIDDEN, errorMessages.numberExistError);
   }
 
   const result = await prisma.auth.create({
@@ -119,14 +120,14 @@ const changePassword = async (payload: IChangePasswordPayload) => {
   } else {
     const result = await prisma.auth.update({
       where: {
-        id
+        id,
       },
       data: {
-        password: hashedPassword
-      }
-    })
+        password: hashedPassword,
+      },
+    });
     if (result) {
-      return { message: successMessage.changePasswordSuccess }
+      return { message: successMessage.changePasswordSuccess };
     }
   }
 };
@@ -134,5 +135,5 @@ const changePassword = async (payload: IChangePasswordPayload) => {
 export const authService = {
   signUp,
   login,
-  changePassword
+  changePassword,
 };

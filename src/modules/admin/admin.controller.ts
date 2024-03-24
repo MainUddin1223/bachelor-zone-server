@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import catchAsync from '../../utils/errorHandlers/catchAsync';
-import { addressSchema } from './admin.validator';
+import { addressSchema, updateAddressSchema } from './admin.validator';
 import sendResponse from '../../utils/responseHandler/sendResponse';
 import { StatusCodes } from 'http-status-codes';
 import { adminService } from './admin.service';
@@ -27,7 +27,7 @@ const addAddress = catchAsync(async (req: Request, res: Response) => {
 });
 
 const updateAddress = catchAsync(async (req: Request, res: Response) => {
-  const { error } = addressSchema.validate(req.body);
+  const { error } = updateAddressSchema.validate(req.body);
 
   if (error) {
     sendResponse(res, {
@@ -38,8 +38,8 @@ const updateAddress = catchAsync(async (req: Request, res: Response) => {
     });
   } else {
     const result = await adminService.updateAddress(
-      req.body.address,
-      req.body.id
+      req.body.id,
+      req.body.address
     );
     sendResponse(res, {
       statusCode: StatusCodes.OK,

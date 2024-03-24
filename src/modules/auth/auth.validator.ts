@@ -5,7 +5,8 @@ export const signUpSchema = Joi.object({
     .pattern(/^(\+)?(88)?01[0-9]{9}\b/)
     .required()
     .messages({
-      'string.pattern.base': 'Invalid phone number. Must be a valid Bangladeshi phone number.',
+      'string.pattern.base':
+        'Invalid phone number. Must be a valid Bangladeshi phone number.',
       'any.required': 'Phone number is required',
     }),
   password: Joi.string().min(6).max(16).required().messages({
@@ -29,7 +30,8 @@ export const loginSchema = Joi.object({
     .pattern(/^(\+)?(88)?01[0-9]{9}\b/)
     .required()
     .messages({
-      'string.pattern.base': 'Invalid phone number. Must be a valid Bangladeshi phone number.',
+      'string.pattern.base':
+        'Invalid phone number. Must be a valid Bangladeshi phone number.',
       'any.required': 'Phone number is required',
     }),
   password: Joi.string().required().messages({
@@ -44,7 +46,8 @@ export const changePasswordSchema = Joi.object({
     .pattern(/^(\+)?(88)?01[0-9]{9}\b/)
     .required()
     .messages({
-      'string.pattern.base': 'Invalid phone number. Must be a valid Bangladeshi phone number.',
+      'string.pattern.base':
+        'Invalid phone number. Must be a valid Bangladeshi phone number.',
       'any.required': 'Phone number is required',
     }),
   oldPassword: Joi.string().required().messages({

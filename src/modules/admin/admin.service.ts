@@ -24,18 +24,6 @@ const addAddress = async (address: string) => {
 };
 
 const updateAddress = async (id: number, address: string) => {
-  const isAddressExist = await prisma.address.findFirst({
-    where: {
-      address: {
-        equals: address,
-        mode: 'insensitive',
-      },
-    },
-  });
-  if (isAddressExist) {
-    throw new ApiError(403, 'Address already exist');
-  }
-
   const result = await prisma.address.update({
     where: {
       id,
