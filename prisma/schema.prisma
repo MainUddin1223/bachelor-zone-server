@@ -29,6 +29,7 @@ model UserInfo {
   address_id  Int
   is_claimed  Boolean  @default(false)
   user_id     Int
+  img         String?
   user        Auth     @relation(fields: [user_id], references: [id])
   is_in_team  Boolean  @default(false)
   Balance     Int      @default(0)
@@ -125,6 +126,6 @@ enum OrderStatus {
 }
 
 enum TransactionType {
-  deposite
+  deposit
   refund
 }

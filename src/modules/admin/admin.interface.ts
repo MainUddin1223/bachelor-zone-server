@@ -1,15 +1,12 @@
-import { QuesType } from '@prisma/client';
-
-export interface ICategory {
-  category: string;
-  adminId: number;
+export interface ICreateTeam {
+  name: string;
+  leader_id: number;
+  address_id: number;
 }
 
-export interface IAddQuiz {
-  adminId: number;
-  categoryId: number;
-  question: string;
-  answer: string[];
-  options: string[];
-  questionType: QuesType;
+export interface IClaimUser {
+  id: number;
+  balance: number;
+  teamId: number;
+  addressId: number;
 }

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import ApiError from '../../utils/errorHandlers/apiError';
-import { ICreateTeam } from './admin.type';
+import { IClaimUser, ICreateTeam } from './admin.interface';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
 
@@ -95,10 +95,7 @@ const createTeam = async (data: ICreateTeam) => {
         where: {
           user_id: data.leader_id,
         },
-        data: {
-          is_in_team: true,
-          team_id: createTeam.id,
-        },
+        data: {},
       });
       if (!updateUserInfo.count) {
         throw new ApiError(500, 'Failed to create team');
@@ -134,8 +131,115 @@ const createTeam = async (data: ICreateTeam) => {
   }
 };
 
+const claimUser = async (data: IClaimUser) => {
+  const isClaimed = await prisma.userInfo.findFirst({
+    where: {
+      user_id: data.id,
+    },
+  });
+  if (isClaimed) {
+    if (isClaimed.is_claimed) {
+      throw new ApiError(409, 'Account already claimed');
+    } else {
+      await prisma.userInfo.update({
+        where: {
+          id: isClaimed.id,
+        },
+        data: {
+          is_claimed: true,
+          Balance: Number(isClaimed.Balance) + data.balance,
+        },
+      });
+    }
+    return {
+      message: 'Account updated successfully',
+    };
+  } else {
+    await prisma.userInfo.create({
+      data: {
+        address_id: data.addressId,
+        is_in_team: true,
+        is_claimed: true,
+        user_id: data.id,
+        Balance: data.balance,
+        team_id: data.teamId,
+      },
+    });
+    return {
+      message: 'Account updated successfully',
+    };
+  }
+};
+
+const changeTeam = async (teamId: number, userId: number) => {
+  const findUserInfo = await prisma.userInfo.findFirst({
+    where: {
+      user_id: userId,
+    },
+  });
+  if (!findUserInfo) {
+    throw new ApiError(404, 'User info not found');
+  }
+  const isLeader = await prisma.team.findFirst({
+    where: {
+      leader_id: userId,
+    },
+  });
+  if (isLeader) {
+    throw new ApiError(
+      409,
+      'The user is leading a team. To change team user has to give leadership to another team member'
+    );
+  }
+  await prisma.userInfo.update({
+    where: {
+      id: findUserInfo.id,
+    },
+    data: {
+      team_id: teamId,
+    },
+  });
+  return { message: 'Successfully change the team' };
+};
+
+const rechargeBalance = async (id: number, amount: number) => {
+  const result = await prisma.$transaction(async tx => {
+    const getUser = await prisma.userInfo.findFirst({
+      where: {
+        user_id: id,
+      },
+    });
+    if (!getUser) {
+      throw new ApiError(404, 'User info not found');
+    }
+    const recharge = await tx.userInfo.update({
+      where: {
+        id: getUser.id,
+      },
+      data: {
+        Balance: amount,
+      },
+    });
+    if (!recharge.Balance) {
+      throw new ApiError(500, 'Recharge failed');
+    }
+    await tx.transaction.create({
+      data: {
+        transaction_type: 'deposit',
+        amount,
+        user_id: id,
+      },
+    });
+    return { message: 'Recharge successful' };
+  });
+  return result;
+};
+
 export const adminService = {
   addAddress,
   updateAddress,
   createTeam,
+  changeTeam,
+  rechargeBalance,
+  claimUser,
 };
