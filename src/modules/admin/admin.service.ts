@@ -390,6 +390,29 @@ const listExpenses = async (data: IListedExpenses) => {
   return { message: 'Expenses listed successfully' };
 };
 
+const changeLeader = async (leaderId: number, team_id: number) => {
+  const result = await prisma.userInfo.findFirst({
+    where: {
+      user_id: leaderId,
+    },
+  });
+  if (!result?.id) {
+    throw new ApiError(404, 'User not found');
+  }
+  if (team_id !== result.team_id) {
+    throw new ApiError(400, 'User is not in the same team .');
+  }
+  await prisma.team.update({
+    where: {
+      id: team_id,
+    },
+    data: {
+      leader_id: leaderId,
+    },
+  });
+  return { message: `Successfully changed the leader` };
+};
+
 export const adminService = {
   addAddress,
   updateAddress,
@@ -399,4 +422,5 @@ export const adminService = {
   claimUser,
   refundBalance,
   listExpenses,
+  changeLeader,
 };

@@ -6,6 +6,7 @@ import {
   CreateTeamSchema,
   RechargeSchema,
   addressSchema,
+  changeLeaderSchema,
   expensesSchema,
   updateAddressSchema,
 } from './admin.validator';
@@ -189,6 +190,29 @@ const listExpenses = catchAsync(async (req: Request, res: Response) => {
     });
   }
 });
+const changeLeader = catchAsync(async (req: Request, res: Response) => {
+  const { error } = changeLeaderSchema.validate(req.body);
+
+  if (error) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: error.details[0]?.message,
+      data: error.details,
+    });
+  } else {
+    const result = await adminService.changeLeader(
+      req.body.leaderId,
+      req.body.teamId
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Leader changed successfully',
+      data: result,
+    });
+  }
+});
 
 export const adminController = {
   addAddress,
@@ -199,4 +223,5 @@ export const adminController = {
   changeTeam,
   rechargeBalance,
   refundBalance,
+  changeLeader,
 };

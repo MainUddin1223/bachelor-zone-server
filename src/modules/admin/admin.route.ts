@@ -14,5 +14,6 @@ router.route('/change-team').post(verifyAdmin, adminController.changeTeam);
 router.route('/recharge').post(verifyAdmin, adminController.rechargeBalance);
 router.route('/refund').post(verifyAdmin, adminController.refundBalance);
 router.route('/expense').post(verifyAdmin, adminController.listExpenses);
+router.route('/change-leader').post(verifyAdmin, adminController.changeLeader);
 
 export default { adminRouter: router };

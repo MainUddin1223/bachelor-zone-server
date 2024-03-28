@@ -102,6 +102,22 @@ export const RechargeSchema = Joi.object({
     })
     .strict(),
 });
+export const changeLeaderSchema = Joi.object({
+  leaderId: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid leader Id',
+      'any.required': 'Leader Id is required',
+    })
+    .strict(),
+  teamId: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid team id',
+      'any.required': 'Team id is required',
+    })
+    .strict(),
+});
 
 export const expensesSchema = Joi.object({
   product_name: Joi.string().required().messages({
