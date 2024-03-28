@@ -85,3 +85,41 @@ export const ChangeTeamSchema = Joi.object({
     })
     .strict(),
 });
+
+export const RechargeSchema = Joi.object({
+  userId: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid user Id',
+      'any.required': 'User Id is required',
+    })
+    .strict(),
+  balance: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid balance',
+      'any.required': 'Balance is required',
+    })
+    .strict(),
+});
+
+export const expensesSchema = Joi.object({
+  product_name: Joi.string().required().messages({
+    'string.pattern.base': 'Invalid product name',
+    'any.required': 'Product name is required',
+  }),
+  quantity: Joi.string().required().messages({
+    'string.pattern.base': 'Invalid product quantity',
+    'any.required': 'Product quantity is required',
+  }),
+  amount: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid amount',
+      'any.required': 'Amount is required',
+    })
+    .strict(),
+  date: Joi.date().optional().messages({
+    'date.base': 'Invalid amount',
+  }),
+});

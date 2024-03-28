@@ -10,3 +10,10 @@ export interface IClaimUser {
   teamId: number;
   addressId: number;
 }
+
+export interface IListedExpenses {
+  product_name: string;
+  quantity: string;
+  amount: number;
+  date?: Date;
+}

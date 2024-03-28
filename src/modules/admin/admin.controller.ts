@@ -4,7 +4,9 @@ import {
   ChangeTeamSchema,
   ClaimUserSchema,
   CreateTeamSchema,
+  RechargeSchema,
   addressSchema,
+  expensesSchema,
   updateAddressSchema,
 } from './admin.validator';
 import sendResponse from '../../utils/responseHandler/sendResponse';
@@ -92,11 +94,58 @@ const createTeam = catchAsync(async (req: Request, res: Response) => {
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
-      message: 'Category added successfully',
+      message: 'Create team successfully',
       data: result,
     });
   }
 });
+
+const rechargeBalance = catchAsync(async (req: Request, res: Response) => {
+  const { error } = RechargeSchema.validate(req.body);
+
+  if (error) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: error.details[0]?.message,
+      data: error.details,
+    });
+  } else {
+    const balance = Number(req.body.balance);
+    const userId = Number(req.body.userId);
+    const result = await adminService.rechargeBalance(userId, balance);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Balance recharged successfully',
+      data: result,
+    });
+  }
+});
+
+const refundBalance = catchAsync(async (req: Request, res: Response) => {
+  const { error } = RechargeSchema.validate(req.body);
+
+  if (error) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: error.details[0]?.message,
+      data: error.details,
+    });
+  } else {
+    const balance = Number(req.body.balance);
+    const userId = Number(req.body.userId);
+    const result = await adminService.refundBalance(userId, balance);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Balance refund successfully',
+      data: result,
+    });
+  }
+});
+
 const changeTeam = catchAsync(async (req: Request, res: Response) => {
   const { error } = ChangeTeamSchema.validate(req.body);
 
@@ -120,10 +169,34 @@ const changeTeam = catchAsync(async (req: Request, res: Response) => {
   }
 });
 
+const listExpenses = catchAsync(async (req: Request, res: Response) => {
+  const { error } = expensesSchema.validate(req.body);
+
+  if (error) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: error.details[0]?.message,
+      data: error.details,
+    });
+  } else {
+    const result = await adminService.listExpenses(req.body);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Expenses listed successfully',
+      data: result,
+    });
+  }
+});
+
 export const adminController = {
   addAddress,
   updateAddress,
   createTeam,
   claimUser,
+  listExpenses,
   changeTeam,
+  rechargeBalance,
+  refundBalance,
 };

@@ -1,6 +1,6 @@
 import { PrismaClient, TransactionType } from '@prisma/client';
 import ApiError from '../../utils/errorHandlers/apiError';
-import { IClaimUser, ICreateTeam } from './admin.interface';
+import { IClaimUser, ICreateTeam, IListedExpenses } from './admin.interface';
 import { minAmountForClaim, serviceFee, tiffinBoxCost } from './admin.constant';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
@@ -299,8 +299,9 @@ const changeTeam = async (teamId: number, userId: number) => {
   return { message: 'Successfully change the team' };
 };
 
-const rechargeBalance = async (id: number, amount: number) => {
+const rechargeBalance = async (id: number, balance: number) => {
   const transaction_type: TransactionType = 'deposit';
+
   const result = await prisma.$transaction(async tx => {
     const getUser = await prisma.userInfo.findFirst({
       where: {
@@ -315,7 +316,7 @@ const rechargeBalance = async (id: number, amount: number) => {
         id: getUser.id,
       },
       data: {
-        Balance: amount,
+        Balance: balance,
       },
     });
     if (!recharge.Balance) {
@@ -325,13 +326,68 @@ const rechargeBalance = async (id: number, amount: number) => {
       data: {
         transaction_type,
         description: 'Balance recharge',
-        amount,
+        amount: balance,
         user_id: id,
       },
     });
     return { message: 'Recharge successful' };
   });
+
   return result;
+};
+
+const refundBalance = async (id: number, balance: number) => {
+  const transaction_type: TransactionType = 'refund';
+
+  const result = await prisma.$transaction(async tx => {
+    const getUser = await prisma.userInfo.findFirst({
+      where: {
+        user_id: id,
+      },
+    });
+    if (!getUser) {
+      throw new ApiError(404, 'User info not found');
+    }
+
+    const currentBalance = Number(getUser.Balance);
+
+    if (balance > currentBalance) {
+      throw new ApiError(409, 'Refund balance is getter than current balance');
+    }
+
+    const refund = await tx.userInfo.update({
+      where: {
+        id: getUser.id,
+      },
+      data: {
+        Balance: currentBalance - balance,
+      },
+    });
+    if (!refund.Balance) {
+      throw new ApiError(500, 'Recharge failed');
+    }
+    await tx.transaction.create({
+      data: {
+        transaction_type,
+        description: 'Refund recharge',
+        amount: balance,
+        user_id: id,
+      },
+    });
+    return { message: 'Refund successful' };
+  });
+
+  return result;
+};
+
+const listExpenses = async (data: IListedExpenses) => {
+  const result = await prisma.expenses.create({
+    data,
+  });
+  if (!result.id) {
+    throw new ApiError(500, 'Failed to list the expenses');
+  }
+  return { message: 'Expenses listed successfully' };
 };
 
 export const adminService = {
@@ -341,4 +397,6 @@ export const adminService = {
   changeTeam,
   rechargeBalance,
   claimUser,
+  refundBalance,
+  listExpenses,
 };
