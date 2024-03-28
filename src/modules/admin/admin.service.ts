@@ -1,6 +1,7 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, TransactionType } from '@prisma/client';
 import ApiError from '../../utils/errorHandlers/apiError';
 import { IClaimUser, ICreateTeam } from './admin.interface';
+import { minAmountForClaim, serviceFee, tiffinBoxCost } from './admin.constant';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
 
@@ -132,42 +133,122 @@ const createTeam = async (data: ICreateTeam) => {
 };
 
 const claimUser = async (data: IClaimUser) => {
+  if (minAmountForClaim > data.balance) {
+    throw new ApiError(402, `Minimum balance should be ${minAmountForClaim}`);
+  }
+
   const isClaimed = await prisma.userInfo.findFirst({
     where: {
       user_id: data.id,
     },
   });
+
+  const getTeam = await prisma.team.findUnique({
+    where: {
+      id: data.teamId,
+    },
+  });
+
+  const getAddress = await prisma.address.findUnique({
+    where: {
+      id: data.addressId,
+    },
+  });
+
+  if (!getAddress || !getTeam) {
+    throw new ApiError(404, 'Team or Address not found');
+  }
+
+  const includeMember = Number(getTeam.member) + 1;
+
+  const calculateBalance = data.balance - (tiffinBoxCost + serviceFee);
+  const transaction_type: TransactionType = 'deposit';
+
+  const transactions = [
+    {
+      transaction_type,
+      amount: tiffinBoxCost,
+      description: 'Tiffin box cost',
+      user_id: data.id,
+    },
+    {
+      transaction_type,
+      amount: serviceFee,
+      description: 'Service fee',
+      user_id: data.id,
+    },
+    {
+      transaction_type,
+      amount: calculateBalance,
+      description: 'Balance recharge',
+      user_id: data.id,
+    },
+  ];
+
   if (isClaimed) {
     if (isClaimed.is_claimed) {
       throw new ApiError(409, 'Account already claimed');
     } else {
-      await prisma.userInfo.update({
-        where: {
-          id: isClaimed.id,
-        },
-        data: {
-          is_claimed: true,
-          Balance: Number(isClaimed.Balance) + data.balance,
-        },
+      await prisma.$transaction(async tx => {
+        const claimUser = await tx.userInfo.update({
+          where: {
+            id: isClaimed.id,
+          },
+          data: {
+            is_claimed: true,
+            Balance: Number(isClaimed.Balance) + data.balance,
+          },
+        });
+        if (claimUser.is_claimed) {
+          await tx.transaction.createMany({
+            data: transactions,
+          });
+
+          await tx.team.update({
+            where: {
+              id: data.teamId,
+            },
+            data: {
+              member: includeMember,
+            },
+          });
+        }
+        return {
+          message: 'Account claimed successfully',
+        };
       });
     }
-    return {
-      message: 'Account updated successfully',
-    };
   } else {
-    await prisma.userInfo.create({
-      data: {
-        address_id: data.addressId,
-        is_in_team: true,
-        is_claimed: true,
-        user_id: data.id,
-        Balance: data.balance,
-        team_id: data.teamId,
-      },
+    await prisma.$transaction(async tx => {
+      const updateUser = await tx.userInfo.create({
+        data: {
+          address_id: data.addressId,
+          is_in_team: true,
+          is_claimed: true,
+          user_id: data.id,
+          Balance: data.balance,
+          team_id: data.teamId,
+        },
+      });
+      if (!updateUser.id) {
+        throw new ApiError(500, 'Failed to claimed user');
+      } else {
+        await tx.transaction.createMany({
+          data: transactions,
+        });
+        await tx.team.update({
+          where: {
+            id: data.teamId,
+          },
+          data: {
+            member: includeMember,
+          },
+        });
+      }
+      return {
+        message: 'Account updated successfully',
+      };
     });
-    return {
-      message: 'Account updated successfully',
-    };
   }
 };
 
@@ -203,6 +284,7 @@ const changeTeam = async (teamId: number, userId: number) => {
 };
 
 const rechargeBalance = async (id: number, amount: number) => {
+  const transaction_type: TransactionType = 'deposit';
   const result = await prisma.$transaction(async tx => {
     const getUser = await prisma.userInfo.findFirst({
       where: {
@@ -225,7 +307,8 @@ const rechargeBalance = async (id: number, amount: number) => {
     }
     await tx.transaction.create({
       data: {
-        transaction_type: 'deposit',
+        transaction_type,
+        description: 'Balance recharge',
         amount,
         user_id: id,
       },

@@ -95,6 +95,7 @@ model Transaction {
   user_id          Int
   user             Auth            @relation(fields: [user_id], references: [id])
   amount           Int
+  description      String
   date             DateTime        @default(now())
   transaction_type TransactionType
   createdAt        DateTime        @default(now())

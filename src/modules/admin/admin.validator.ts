@@ -37,3 +37,33 @@ export const CreateTeamSchema = Joi.object({
     })
     .strict(),
 });
+
+export const ClaimUserSchema = Joi.object({
+  id: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid user Id',
+      'any.required': 'User Id is required',
+    })
+    .strict(),
+  balance: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid balance',
+    })
+    .strict(),
+  addressId: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid Address id',
+      'any.required': 'Address Id is required',
+    })
+    .strict(),
+  teamId: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid leader id',
+      'any.required': 'Leader Id is required',
+    })
+    .strict(),
+});

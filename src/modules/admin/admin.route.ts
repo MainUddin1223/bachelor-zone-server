@@ -9,5 +9,6 @@ router
   .post(verifyAdmin, adminController.addAddress)
   .patch(verifyAdmin, adminController.updateAddress);
 router.route('/team').post(verifyAdmin, adminController.createTeam);
+router.route('/claim-user').post(verifyAdmin, adminController.claimUser);
 
 export default { adminRouter: router };
