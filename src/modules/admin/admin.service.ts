@@ -2,6 +2,7 @@ import { PrismaClient, TransactionType } from '@prisma/client';
 import ApiError from '../../utils/errorHandlers/apiError';
 import { IClaimUser, ICreateTeam, IListedExpenses } from './admin.interface';
 import { minAmountForClaim, serviceFee, tiffinBoxCost } from './admin.constant';
+import { generateRandomID } from '../../utils/helpers/helpers';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
 
@@ -115,9 +116,11 @@ const createTeam = async (data: ICreateTeam) => {
       if (!createTeam.id) {
         throw new ApiError(500, 'Failed to create team');
       }
+      const generateId = generateRandomID(5, data.leader_id);
       const updateUserInfo = await tx.userInfo.create({
         data: {
           address_id: data.address_id,
+          virtual_id: generateId,
           user_id: data.leader_id,
           team_id: createTeam.id,
           is_in_team: true,
@@ -220,8 +223,10 @@ const claimUser = async (data: IClaimUser) => {
     }
   } else {
     await prisma.$transaction(async tx => {
+      const virtual_id = generateRandomID(5, data.id);
       const updateUser = await tx.userInfo.create({
         data: {
+          virtual_id,
           address_id: data.addressId,
           is_in_team: true,
           is_claimed: true,

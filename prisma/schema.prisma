@@ -26,6 +26,7 @@ model Auth {
 
 model UserInfo {
   id          Int      @id @default(autoincrement())
+  virtual_id  String
   address_id  Int
   is_claimed  Boolean  @default(false)
   user_id     Int
