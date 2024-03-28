@@ -50,6 +50,7 @@ export const ClaimUserSchema = Joi.object({
     .required()
     .messages({
       'number.base': 'Invalid balance',
+      'any.required': 'Balance is required',
     })
     .strict(),
   addressId: Joi.number()
@@ -64,6 +65,23 @@ export const ClaimUserSchema = Joi.object({
     .messages({
       'number.base': 'Invalid leader id',
       'any.required': 'Leader Id is required',
+    })
+    .strict(),
+});
+
+export const ChangeTeamSchema = Joi.object({
+  userId: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid user Id',
+      'any.required': 'User Id is required',
+    })
+    .strict(),
+  teamId: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid team id',
+      'any.required': 'Team id is required',
     })
     .strict(),
 });

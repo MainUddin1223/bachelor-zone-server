@@ -258,20 +258,35 @@ const changeTeam = async (teamId: number, userId: number) => {
       user_id: userId,
     },
   });
+
   if (!findUserInfo) {
     throw new ApiError(404, 'User info not found');
   }
+  const findTeamInfo = await prisma.team.findUnique({
+    where: {
+      id: teamId,
+    },
+  });
+  if (!findTeamInfo) {
+    throw new ApiError(404, 'Team info not found');
+  }
+  if (findTeamInfo.address_id !== findUserInfo.address_id) {
+    throw new ApiError(409, 'Address must be same for user and team');
+  }
+
   const isLeader = await prisma.team.findFirst({
     where: {
       leader_id: userId,
     },
   });
+
   if (isLeader) {
     throw new ApiError(
       409,
       'The user is leading a team. To change team user has to give leadership to another team member'
     );
   }
+
   await prisma.userInfo.update({
     where: {
       id: findUserInfo.id,
@@ -280,6 +295,7 @@ const changeTeam = async (teamId: number, userId: number) => {
       team_id: teamId,
     },
   });
+
   return { message: 'Successfully change the team' };
 };
 

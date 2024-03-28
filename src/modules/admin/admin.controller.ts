@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import catchAsync from '../../utils/errorHandlers/catchAsync';
 import {
+  ChangeTeamSchema,
   ClaimUserSchema,
   CreateTeamSchema,
   addressSchema,
@@ -75,6 +76,7 @@ const claimUser = catchAsync(async (req: Request, res: Response) => {
     });
   }
 });
+
 const createTeam = catchAsync(async (req: Request, res: Response) => {
   const { error } = CreateTeamSchema.validate(req.body);
 
@@ -95,10 +97,33 @@ const createTeam = catchAsync(async (req: Request, res: Response) => {
     });
   }
 });
+const changeTeam = catchAsync(async (req: Request, res: Response) => {
+  const { error } = ChangeTeamSchema.validate(req.body);
+
+  if (error) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: error.details[0]?.message,
+      data: error.details,
+    });
+  } else {
+    const teamId = Number(req.body.teamId);
+    const userId = Number(req.body.userId);
+    const result = await adminService.changeTeam(teamId, userId);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Team changed successfully',
+      data: result,
+    });
+  }
+});
 
 export const adminController = {
   addAddress,
   updateAddress,
   createTeam,
   claimUser,
+  changeTeam,
 };
