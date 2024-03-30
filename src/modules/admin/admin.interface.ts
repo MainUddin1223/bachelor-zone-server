@@ -17,3 +17,13 @@ export interface IListedExpenses {
   amount: number;
   date?: Date;
 }
+export interface AggregatedOrder {
+  team_id: number;
+  team_name: string;
+  leaderName: string;
+  leaderPhoneNumber: string;
+  status: string;
+  address?: string;
+  order_count: number;
+  due_boxes: number;
+}

@@ -1,6 +1,11 @@
 import { PrismaClient, TransactionType } from '@prisma/client';
 import ApiError from '../../utils/errorHandlers/apiError';
-import { IClaimUser, ICreateTeam, IListedExpenses } from './admin.interface';
+import {
+  AggregatedOrder,
+  IClaimUser,
+  ICreateTeam,
+  IListedExpenses,
+} from './admin.interface';
 import { minAmountForClaim, serviceFee, tiffinBoxCost } from './admin.constant';
 import { generateRandomID } from '../../utils/helpers/helpers';
 import dayjs from 'dayjs';
@@ -426,6 +431,7 @@ const getOrders = async (date: any) => {
 
   const orders = await prisma.order.findMany({
     where: {
+      status: 'pending',
       AND: [
         {
           delivery_date: {
@@ -434,13 +440,69 @@ const getOrders = async (date: any) => {
         },
         {
           delivery_date: {
-            lte: endDate, // Ensure you have a 'Z' indicating UTC time zone
+            lte: endDate,
           },
         },
       ],
     },
+    include: {
+      team: {
+        select: {
+          address: true,
+          address_id: true,
+          due_boxes: true,
+          leader: {
+            select: {
+              name: true,
+              phone: true,
+            },
+          },
+          leader_id: true,
+          name: true,
+        },
+      },
+    },
   });
-  return orders;
+
+  // Create an object to store aggregated data
+  const aggregatedData: Record<number, AggregatedOrder> = {};
+
+  // Iterate through each item in the data
+  orders.forEach(item => {
+    const {
+      team_id,
+      status,
+      team: {
+        name: team_name,
+        leader: { name: leaderName, phone: leaderPhoneNumber },
+        address,
+        due_boxes,
+      },
+    } = item;
+
+    // Check if the team_id exists in the aggregatedData
+    if (!aggregatedData[team_id]) {
+      // If not, initialize an object for the team_id
+      aggregatedData[team_id] = {
+        team_id,
+        team_name,
+        leaderName,
+        leaderPhoneNumber,
+        status,
+        due_boxes,
+        address: address?.address,
+        order_count: 1, // Initialize order count to 1
+      };
+    } else {
+      // If it exists, increment the order count
+      aggregatedData[team_id].order_count++;
+    }
+  });
+
+  // Convert the aggregatedData object into an array
+  const result = Object.values(aggregatedData);
+
+  return result;
 };
 
 export const adminService = {
