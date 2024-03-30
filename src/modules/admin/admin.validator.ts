@@ -102,6 +102,7 @@ export const RechargeSchema = Joi.object({
     })
     .strict(),
 });
+
 export const changeLeaderSchema = Joi.object({
   leaderId: Joi.number()
     .required()
@@ -137,5 +138,11 @@ export const expensesSchema = Joi.object({
     .strict(),
   date: Joi.date().optional().messages({
     'date.base': 'Invalid amount',
+  }),
+});
+
+export const getOrderSchema = Joi.object({
+  date: Joi.string().optional().messages({
+    'string.pattern.base': 'Invalid Date',
   }),
 });

@@ -29,7 +29,7 @@ model UserInfo {
   virtual_id  String
   address_id  Int
   is_claimed  Boolean  @default(false)
-  user_id     Int
+  user_id     Int      @unique
   img         String?
   user        Auth     @relation(fields: [user_id], references: [id])
   is_in_team  Boolean  @default(false)
@@ -82,7 +82,7 @@ model Order {
   user_id       Int
   team_id       Int
   status        OrderStatus @default(pending)
-  delivery_date String
+  delivery_date DateTime
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
   team          Team        @relation(fields: [team_id], references: [id])

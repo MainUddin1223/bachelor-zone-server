@@ -13,6 +13,7 @@ import {
 import sendResponse from '../../utils/responseHandler/sendResponse';
 import { StatusCodes } from 'http-status-codes';
 import { adminService } from './admin.service';
+import dayjs from 'dayjs';
 
 const addAddress = catchAsync(async (req: Request, res: Response) => {
   const { error } = addressSchema.validate(req.body);
@@ -190,6 +191,7 @@ const listExpenses = catchAsync(async (req: Request, res: Response) => {
     });
   }
 });
+
 const changeLeader = catchAsync(async (req: Request, res: Response) => {
   const { error } = changeLeaderSchema.validate(req.body);
 
@@ -214,6 +216,17 @@ const changeLeader = catchAsync(async (req: Request, res: Response) => {
   }
 });
 
+const getOrders = catchAsync(async (req: Request, res: Response) => {
+  const date = req.query.date ? req.query.date : dayjs(Date.now());
+  const result = await adminService.getOrders(date);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Leader changed successfully',
+    data: result,
+  });
+});
+
 export const adminController = {
   addAddress,
   updateAddress,
@@ -224,4 +237,5 @@ export const adminController = {
   rechargeBalance,
   refundBalance,
   changeLeader,
+  getOrders,
 };

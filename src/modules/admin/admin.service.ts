@@ -3,6 +3,7 @@ import ApiError from '../../utils/errorHandlers/apiError';
 import { IClaimUser, ICreateTeam, IListedExpenses } from './admin.interface';
 import { minAmountForClaim, serviceFee, tiffinBoxCost } from './admin.constant';
 import { generateRandomID } from '../../utils/helpers/helpers';
+import dayjs from 'dayjs';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
 
@@ -417,6 +418,30 @@ const changeLeader = async (leaderId: number, team_id: number) => {
   });
   return { message: `Successfully changed the leader` };
 };
+const getOrders = async (date: any) => {
+  const todayStartOfDay = dayjs(date).startOf('hour');
+
+  const startDate = todayStartOfDay.format('YYYY-MM-DD[T]00:00:00.000Z');
+  const endDate = todayStartOfDay.format('YYYY-MM-DD[T]23:59:59.000Z');
+
+  const orders = await prisma.order.findMany({
+    where: {
+      AND: [
+        {
+          delivery_date: {
+            gte: startDate,
+          },
+        },
+        {
+          delivery_date: {
+            lte: endDate, // Ensure you have a 'Z' indicating UTC time zone
+          },
+        },
+      ],
+    },
+  });
+  return orders;
+};
 
 export const adminService = {
   addAddress,
@@ -428,4 +453,5 @@ export const adminService = {
   refundBalance,
   listExpenses,
   changeLeader,
+  getOrders,
 };

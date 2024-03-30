@@ -77,5 +77,6 @@ const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
 
 const verifyAdmin = verifyAuthWithRole(['admin']);
 const verifyPerformer = verifyAuthWithRole(['performer']);
+const verifyUser = verifyAuthWithRole(['user']);
 
-export { verifyAdmin, verifyPerformer, verifyAuth };
+export { verifyAdmin, verifyPerformer, verifyAuth, verifyUser };
