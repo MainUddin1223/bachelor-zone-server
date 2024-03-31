@@ -27,6 +27,19 @@ const placeOrder = catchAsync(async (req: Request, res: Response) => {
   }
 });
 
+const cancelOrder = catchAsync(async (req: Request, res: Response) => {
+  const userId = Number(req.user?.id);
+  const orderId = Number(req.params.id);
+  const result = await userService.cancelOrder(orderId, userId);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Order placed successfully',
+    data: result,
+  });
+});
+
 export const userController = {
   placeOrder,
+  cancelOrder,
 };

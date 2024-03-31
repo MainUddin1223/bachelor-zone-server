@@ -16,6 +16,7 @@ export const isValidOrderForToday = (date: string): boolean => {
     .split('T')[0];
   const formatDeliveryDate = date.split('T')[0];
   const formatDate = todayDate.format('YYYY-MM-DD[T]06:30:00.000Z');
+  console.log(deliveryDate, formatDeliveryDate);
   if (deliveryDate == formatDeliveryDate && date > formatDate) {
     return false;
   }
