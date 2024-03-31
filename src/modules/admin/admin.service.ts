@@ -428,7 +428,6 @@ const getOrders = async (date: any) => {
 
   const startDate = todayStartOfDay.format('YYYY-MM-DD[T]00:00:00.000Z');
   const endDate = todayStartOfDay.format('YYYY-MM-DD[T]23:59:59.000Z');
-
   const orders = await prisma.order.findMany({
     where: {
       status: 'pending',

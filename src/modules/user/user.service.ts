@@ -1,19 +1,28 @@
 import { PrismaClient } from '@prisma/client';
 import { mealCost } from './user.constant';
 import ApiError from '../../utils/errorHandlers/apiError';
+import { isValidOrderDate, isValidOrderForToday } from './user.utils';
 
 const prisma = new PrismaClient();
 
 const placeOrder = async (date: string, userId: number) => {
+  const isValidDeliveryDate = isValidOrderDate(date);
+  if (!isValidDeliveryDate) {
+    throw new ApiError(409, 'Invalid delivery date');
+  }
+  const isValidDeliveryDateForToday = isValidOrderForToday(date);
+  if (!isValidDeliveryDateForToday) {
+    throw new ApiError(409, 'You must order lunch for today before 6:30');
+  }
   const userInfo: any = await prisma.userInfo.findUnique({
     where: {
       user_id: userId,
     },
   });
+
   if (!userInfo) {
     throw new ApiError(404, 'Unclaimed user');
   }
-  console.log(userInfo);
   const balance = userInfo.Balance;
   if (mealCost > balance) {
     throw new ApiError(403, 'Insufficient Balance');

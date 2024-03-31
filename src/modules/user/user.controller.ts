@@ -17,7 +17,9 @@ const placeOrder = catchAsync(async (req: Request, res: Response) => {
     });
   } else {
     const userId = Number(req.user?.id);
-    const result = await userService.placeOrder(req.body.date, userId);
+    const orderSortOfDate = req.body.date.split('T')[0];
+    const delivery_date = `${orderSortOfDate}T00:00:00.000Z`;
+    const result = await userService.placeOrder(delivery_date, userId);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
