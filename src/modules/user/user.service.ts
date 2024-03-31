@@ -27,22 +27,41 @@ const placeOrder = async (date: string, userId: number) => {
   if (mealCost > balance) {
     throw new ApiError(403, 'Insufficient Balance');
   }
+  const orderSortOfDate = date.split('T')[0];
+  const delivery_date = `${orderSortOfDate}T00:00:00.000Z`;
   const isOrderExist = await prisma.order.findFirst({
     where: {
-      delivery_date: date,
+      delivery_date,
     },
   });
   if (isOrderExist) {
     throw new ApiError(409, 'Order already exist');
   }
-  const createOrder = await prisma.order.create({
-    data: {
-      user_id: userId,
-      team_id: userInfo.team_id,
-      delivery_date: date,
-    },
+  const placeOrder = await prisma.$transaction(async tx => {
+    const createOrder = await tx.order.create({
+      data: {
+        user_id: userId,
+        team_id: userInfo.team_id,
+        delivery_date,
+      },
+    });
+    if (!createOrder.id) {
+      throw new ApiError(500, 'Failed to place order');
+    }
+    const updateBalance = await tx.userInfo.update({
+      where: {
+        user_id: userId,
+      },
+      data: {
+        Balance: balance - mealCost,
+      },
+    });
+    if (!updateBalance.id) {
+      throw new ApiError(500, 'Failed to place order');
+    }
+    return 'Order placed successfully';
   });
-  return createOrder;
+  return placeOrder;
 };
 
 export const userService = {
