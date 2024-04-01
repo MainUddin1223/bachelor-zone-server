@@ -4,6 +4,7 @@ import { orderSchema } from './user.validator';
 import sendResponse from '../../utils/responseHandler/sendResponse';
 import { StatusCodes } from 'http-status-codes';
 import { userService } from './user.service';
+import { successMessage } from './user.constant';
 
 const placeOrder = catchAsync(async (req: Request, res: Response) => {
   const { error } = orderSchema.validate(req.body);
@@ -34,7 +35,7 @@ const cancelOrder = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: 'Order canceled successfully',
+    message: successMessage.successToCancel,
     data: result,
   });
 });
@@ -45,7 +46,7 @@ const updateOrder = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: 'Order updated successfully',
+    message: successMessage.successToUpdate,
     data: result,
   });
 });
