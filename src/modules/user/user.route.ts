@@ -6,6 +6,9 @@ const router = express.Router();
 
 router.route('/order').post(verifyUser, userController.placeOrder);
 
-router.route('/order/:id').post(verifyUser, userController.cancelOrder);
+router
+  .route('/order/:id')
+  .post(verifyUser, userController.cancelOrder)
+  .patch(verifyUser, userController.updateOrder);
 
 export default { authRouter: router };

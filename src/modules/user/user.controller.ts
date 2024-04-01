@@ -34,7 +34,18 @@ const cancelOrder = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: 'Order placed successfully',
+    message: 'Order canceled successfully',
+    data: result,
+  });
+});
+const updateOrder = catchAsync(async (req: Request, res: Response) => {
+  const userId = Number(req.user?.id);
+  const orderId = Number(req.params.id);
+  const result = await userService.updateOrder(orderId, userId);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Order updated successfully',
     data: result,
   });
 });
@@ -42,4 +53,5 @@ const cancelOrder = catchAsync(async (req: Request, res: Response) => {
 export const userController = {
   placeOrder,
   cancelOrder,
+  updateOrder,
 };
