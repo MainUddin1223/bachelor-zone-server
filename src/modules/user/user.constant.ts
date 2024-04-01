@@ -16,4 +16,5 @@ export const errorMessage = {
 export const successMessage = {
   successToUpdate: 'Order updated successfully',
   successToCancel: 'Order canceled successfully',
+  successToRetrieved: 'Order retrieved successfully',
 };

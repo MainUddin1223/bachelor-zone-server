@@ -50,9 +50,20 @@ const updateOrder = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getUpcomingOrder = catchAsync(async (req: Request, res: Response) => {
+  const userId = Number(req.user?.id);
+  const result = await userService.getUpcomingOrder(userId);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: successMessage.successToUpdate,
+    data: result,
+  });
+});
 
 export const userController = {
   placeOrder,
   cancelOrder,
   updateOrder,
+  getUpcomingOrder,
 };

@@ -86,8 +86,21 @@ const updateOrder = async (id: number, userId: number) => {
   return result;
 };
 
+const getUpcomingOrder = async (id: number) => {
+  const upcomingOrders = await prisma.order.findMany({
+    where: {
+      user_id: id,
+      delivery_date: {
+        gte: new Date(),
+      },
+    },
+  });
+  return upcomingOrders;
+};
+
 export const userService = {
   placeOrder,
   cancelOrder,
   updateOrder,
+  getUpcomingOrder,
 };
