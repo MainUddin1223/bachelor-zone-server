@@ -9,6 +9,8 @@ router
   .post(verifyUser, userController.placeOrder)
   .get(verifyUser, userController.getUpcomingOrder);
 
+router.route('/order-history').get(verifyUser, userController.getOrderHistory);
+
 router
   .route('/order/:id')
   .post(verifyUser, userController.cancelOrder)

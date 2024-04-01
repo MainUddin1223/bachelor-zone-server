@@ -7,6 +7,7 @@ import {
   isValidOrderForToday,
   updateOrderStatus,
 } from './user.utils';
+import dayjs from 'dayjs';
 
 const prisma = new PrismaClient();
 
@@ -87,12 +88,33 @@ const updateOrder = async (id: number, userId: number) => {
 };
 
 const getUpcomingOrder = async (id: number) => {
+  const todayDate = dayjs(new Date()).startOf('hour');
+  const formatTodayDate = todayDate.format('YYYY-MM-DD');
   const upcomingOrders = await prisma.order.findMany({
     where: {
       user_id: id,
       delivery_date: {
-        gte: new Date(),
+        gte: `${formatTodayDate}T00:00:00.000Z`,
       },
+    },
+    orderBy: {
+      delivery_date: 'asc',
+    },
+  });
+  return upcomingOrders;
+};
+const getOrderHistory = async (id: number) => {
+  const todayDate = dayjs(new Date()).startOf('hour');
+  const formatTodayDate = todayDate.format('YYYY-MM-DD');
+  const upcomingOrders = await prisma.order.findMany({
+    where: {
+      user_id: id,
+      delivery_date: {
+        lt: `${formatTodayDate}T00:00:00.000Z`,
+      },
+    },
+    orderBy: {
+      delivery_date: 'desc',
     },
   });
   return upcomingOrders;
@@ -103,4 +125,5 @@ export const userService = {
   cancelOrder,
   updateOrder,
   getUpcomingOrder,
+  getOrderHistory,
 };
