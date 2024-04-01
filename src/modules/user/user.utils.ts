@@ -1,4 +1,13 @@
 import dayjs from 'dayjs';
+export const getFormatDate = (date: any) => {
+  const makeDate = dayjs(date);
+  return makeDate.format('YYYY-MM-DD[T]00:00:00.000Z');
+};
+
+export const getFormatDateAndTime = (date: any) => {
+  const makeDate = dayjs(date);
+  return makeDate.format('YYYY-MM-DD[T]06:30:00.000Z');
+};
 
 export const isValidOrderDate = (date: string): boolean => {
   const todayDate = dayjs(new Date()).startOf('hour');
@@ -11,12 +20,9 @@ export const isValidOrderDate = (date: string): boolean => {
 
 export const isValidOrderForToday = (date: string): boolean => {
   const todayDate = dayjs(new Date()).startOf('hour');
-  const deliveryDate = todayDate
-    .format('YYYY-MM-DD[T]00:00:00.000Z')
-    .split('T')[0];
+  const deliveryDate = getFormatDate(todayDate).split('T')[0];
   const formatDeliveryDate = date.split('T')[0];
-  const formatDate = todayDate.format('YYYY-MM-DD[T]06:30:00.000Z');
-  console.log(deliveryDate, formatDeliveryDate);
+  const formatDate = getFormatDateAndTime(todayDate);
   if (deliveryDate == formatDeliveryDate && date > formatDate) {
     return false;
   }

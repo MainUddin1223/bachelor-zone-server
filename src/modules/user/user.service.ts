@@ -1,7 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { mealCost } from './user.constant';
 import ApiError from '../../utils/errorHandlers/apiError';
-import { isValidOrderDate, isValidOrderForToday } from './user.utils';
+import {
+  getFormatDate,
+  getFormatDateAndTime,
+  isValidOrderDate,
+  isValidOrderForToday,
+} from './user.utils';
 import dayjs from 'dayjs';
 
 const prisma = new PrismaClient();
@@ -29,7 +34,7 @@ const placeOrder = async (date: string, userId: number) => {
     throw new ApiError(403, 'Insufficient Balance');
   }
   const orderSortOfDate = date.split('T')[0];
-  const delivery_date = `${orderSortOfDate}T00:00:00.000Z`;
+  const delivery_date = getFormatDate(orderSortOfDate);
   const isOrderExist = await prisma.order.findFirst({
     where: {
       delivery_date,
@@ -84,18 +89,16 @@ const cancelOrder = async (id: number, userId: number) => {
   if (!getOrder) {
     throw new ApiError(404, 'Order not found');
   }
-  const deliveryDate = dayjs(getOrder.delivery_date).format(
-    'YYYY-MM-DD[T]00:00.000Z'
-  );
+  const deliveryDate = getFormatDate(dayjs(getOrder.delivery_date));
   const todayDate = dayjs(new Date()).startOf('hour');
-  const formatTodayDate = todayDate.format('YYYY-MM-DD[T]00:00.000Z');
+  const formatTodayDate = getFormatDate(todayDate);
   if (formatTodayDate > deliveryDate) {
     throw new ApiError(409, 'Order date has passed');
   }
   const formatCancelDate = todayDate.format('YYYY-MM-DD[T]hh:mm:ss.sssZ');
   const cancelDate = formatCancelDate.split('T')[0];
   const formatDeliveryDate = deliveryDate.split('T')[0];
-  const formatDate = todayDate.format('YYYY-MM-DD[T]06:30:00.000Z');
+  const formatDate = getFormatDateAndTime(todayDate);
   if (cancelDate == formatDeliveryDate && formatCancelDate > formatDate) {
     throw new ApiError(409, 'Order date has passed');
   }
