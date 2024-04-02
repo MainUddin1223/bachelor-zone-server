@@ -8,6 +8,7 @@ import {
   updateOrderStatus,
 } from './user.utils';
 import dayjs from 'dayjs';
+import { pagination } from '../../utils/helpers/pagination';
 
 const prisma = new PrismaClient();
 
@@ -103,10 +104,14 @@ const getUpcomingOrder = async (id: number) => {
   });
   return upcomingOrders;
 };
-const getOrderHistory = async (id: number) => {
+const getOrderHistory = async (id: number, pageNumber: number) => {
+  const meta = pagination({ page: pageNumber });
+  const { skip, take } = meta;
   const todayDate = dayjs(new Date()).startOf('hour');
   const formatTodayDate = todayDate.format('YYYY-MM-DD');
   const upcomingOrders = await prisma.order.findMany({
+    skip,
+    take,
     where: {
       user_id: id,
       delivery_date: {
@@ -117,7 +122,20 @@ const getOrderHistory = async (id: number) => {
       delivery_date: 'desc',
     },
   });
-  return upcomingOrders;
+  const totalCount = await prisma.order.count({
+    where: {
+      delivery_date: {
+        lt: `${formatTodayDate}T00:00:00.000Z`,
+      },
+    },
+  });
+
+  const totalPage =
+    totalCount > take ? Math.ceil(totalCount / Number(take)) : 1;
+  return {
+    upcomingOrders,
+    meta: { size: take, total: totalCount, totalPage },
+  };
 };
 
 export const userService = {
