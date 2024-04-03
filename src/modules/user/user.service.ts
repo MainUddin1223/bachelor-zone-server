@@ -104,6 +104,7 @@ const getUpcomingOrder = async (id: number) => {
   });
   return upcomingOrders;
 };
+
 const getOrderHistory = async (id: number, pageNumber: number) => {
   const meta = pagination({ page: pageNumber });
   const { skip, take } = meta;
@@ -133,9 +134,56 @@ const getOrderHistory = async (id: number, pageNumber: number) => {
   const totalPage =
     totalCount > take ? Math.ceil(totalCount / Number(take)) : 1;
   return {
-    upcomingOrders,
+    data: upcomingOrders,
     meta: { size: take, total: totalCount, totalPage },
   };
+};
+
+const userInfo = async (id: number) => {
+  const result = await prisma.userInfo.findFirst({
+    where: {
+      user_id: id,
+    },
+    select: {
+      address: true,
+      team_member: {
+        select: {
+          leader: {
+            select: {
+              name: true,
+              phone: true,
+            },
+          },
+          name: true,
+        },
+      },
+      id: true,
+      Balance: true,
+      virtual_id: true,
+      is_claimed: true,
+      user: {
+        select: {
+          phone: true,
+          name: true,
+        },
+      },
+    },
+  });
+  if (!result?.id) {
+    throw new ApiError(404, errorMessage.unclaimedUser);
+  }
+  const formatInfo = {
+    balance: result?.Balance,
+    address: result?.address.address,
+    team: result?.team_member.name,
+    teamLeader: result?.team_member.leader.name,
+    leaderPhone: result?.team_member.leader.phone,
+    name: result.user.name,
+    phone: result.user.phone,
+    virtual_id: result?.virtual_id,
+    is_claimed: result?.is_claimed,
+  };
+  return formatInfo;
 };
 
 export const userService = {
@@ -144,4 +192,5 @@ export const userService = {
   updateOrder,
   getUpcomingOrder,
   getOrderHistory,
+  userInfo,
 };

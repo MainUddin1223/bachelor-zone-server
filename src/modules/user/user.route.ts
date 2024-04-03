@@ -4,6 +4,7 @@ import { userController } from './user.controller';
 
 const router = express.Router();
 
+router.route('/info').get(verifyUser, userController.getUserInfo);
 router
   .route('/order')
   .post(verifyUser, userController.placeOrder)

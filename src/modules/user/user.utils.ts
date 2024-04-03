@@ -26,6 +26,7 @@ export const isValidOrderForToday = (date: string): boolean => {
   }
   return true;
 };
+
 export const getUserInfo = async (id: number) => {
   const userInfo = await prisma.userInfo.findFirst({
     where: {

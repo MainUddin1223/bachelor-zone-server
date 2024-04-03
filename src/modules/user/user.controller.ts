@@ -57,7 +57,7 @@ const getUpcomingOrder = catchAsync(async (req: Request, res: Response) => {
     statusCode: StatusCodes.OK,
     success: true,
     message: successMessage.successToRetrieved,
-    data: result,
+    data: { data: result },
   });
 });
 const getOrderHistory = catchAsync(async (req: Request, res: Response) => {
@@ -72,10 +72,22 @@ const getOrderHistory = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getUserInfo = catchAsync(async (req: Request, res: Response) => {
+  const userId = Number(req.user?.id);
+  const result = await userService.userInfo(userId);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: successMessage.successToRetrieved,
+    data: result,
+  });
+});
+
 export const userController = {
   placeOrder,
   cancelOrder,
   updateOrder,
   getUpcomingOrder,
   getOrderHistory,
+  getUserInfo,
 };

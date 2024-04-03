@@ -88,7 +88,10 @@ const createTeam = async (data: ICreateTeam) => {
       user_id: data.leader_id,
     },
   });
-  if (isAccountClaimed) {
+  if (isAccountClaimed?.id) {
+    if (isAccountClaimed.address_id !== data.address_id) {
+      throw new ApiError(409, 'User Address and team address must be same');
+    }
     const result = await prisma.$transaction(async tx => {
       const createTeam = await tx.team.create({
         data: {
@@ -166,6 +169,9 @@ const claimUser = async (data: IClaimUser) => {
 
   if (!getAddress || !getTeam) {
     throw new ApiError(404, 'Team or Address not found');
+  }
+  if (getAddress.id !== getTeam.address_id) {
+    throw new ApiError(409, 'User Address and team address must be same');
   }
 
   const includeMember = Number(getTeam.member) + 1;
@@ -423,6 +429,7 @@ const changeLeader = async (leaderId: number, team_id: number) => {
   });
   return { message: `Successfully changed the leader` };
 };
+
 const getOrders = async (date: any) => {
   const todayStartOfDay = dayjs(date).startOf('hour');
 

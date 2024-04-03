@@ -3,6 +3,7 @@ import express, { Application, NextFunction, Request, Response } from 'express';
 import { StatusCodes } from 'http-status-codes';
 import config from './utils/config';
 import router from './route';
+import globalErrorHandler from './utils/errorHandlers/globalErrorHandlers';
 
 const app: Application = express();
 const corsOptions = {
@@ -15,7 +16,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 app.use(config.api_route as string, router);
-
+app.use(globalErrorHandler);
 app.get('', (req, res) => {
   const message = `Server is running `;
   res.status(StatusCodes.OK).json({

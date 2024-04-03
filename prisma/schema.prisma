@@ -32,6 +32,7 @@ model UserInfo {
   user_id     Int      @unique
   img         String?
   user        Auth     @relation(fields: [user_id], references: [id])
+  address     Address  @relation(fields: [address_id], references: [id])
   is_in_team  Boolean  @default(false)
   Balance     Int      @default(0)
   team_id     Int
@@ -51,11 +52,12 @@ model AdminInfo {
 }
 
 model Address {
-  id        Int      @id @default(autoincrement())
+  id        Int        @id @default(autoincrement())
   address   String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
   Team      Team[]
+  UserInfo  UserInfo[]
 
   @@map("address")
 }
