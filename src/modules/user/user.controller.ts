@@ -36,7 +36,7 @@ const cancelOrder = catchAsync(async (req: Request, res: Response) => {
     statusCode: StatusCodes.OK,
     success: true,
     message: successMessage.successToCancel,
-    data: result,
+    data: { message: result },
   });
 });
 const updateOrder = catchAsync(async (req: Request, res: Response) => {
@@ -47,7 +47,7 @@ const updateOrder = catchAsync(async (req: Request, res: Response) => {
     statusCode: StatusCodes.OK,
     success: true,
     message: successMessage.successToUpdate,
-    data: result,
+    data: { message: result },
   });
 });
 const getUpcomingOrder = catchAsync(async (req: Request, res: Response) => {

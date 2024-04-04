@@ -80,7 +80,7 @@ export const updateOrderStatus = async (
 
   if (cancelDate == formatDeliveryDate && formatCancelDate > formatDate) {
     //check the time if the order is for today
-    throw new ApiError(409, errorMsg.orderDatePassed);
+    throw new ApiError(409, errorMsg.todayOrderDatePassed);
   }
 
   const result = await prisma.$transaction(async tx => {
