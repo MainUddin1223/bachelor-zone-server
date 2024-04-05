@@ -62,7 +62,7 @@ const getUpcomingOrder = catchAsync(async (req: Request, res: Response) => {
 });
 const getOrderHistory = catchAsync(async (req: Request, res: Response) => {
   const userId = Number(req.user?.id);
-  const page = req.query.page ? Number(req.query.page) : 0;
+  const page = req.query.page ? Number(req.query.page) : 1;
   const result = await userService.getOrderHistory(userId, page);
   sendResponse(res, {
     statusCode: StatusCodes.OK,

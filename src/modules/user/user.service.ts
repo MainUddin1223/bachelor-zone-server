@@ -107,7 +107,7 @@ const getUpcomingOrder = async (id: number) => {
 
 const getOrderHistory = async (id: number, pageNumber: number) => {
   const meta = pagination({ page: pageNumber });
-  const { skip, take } = meta;
+  const { skip, take, page } = meta;
   const todayDate = dayjs(new Date()).startOf('hour');
   const formatTodayDate = todayDate.format('YYYY-MM-DD');
   const upcomingOrders = await prisma.order.findMany({
@@ -135,7 +135,7 @@ const getOrderHistory = async (id: number, pageNumber: number) => {
     totalCount > take ? Math.ceil(totalCount / Number(take)) : 1;
   return {
     data: upcomingOrders,
-    meta: { size: take, total: totalCount, totalPage },
+    meta: { size: take, total: totalCount, totalPage, currentPage: page },
   };
 };
 
