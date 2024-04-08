@@ -2,11 +2,10 @@ import Joi from 'joi';
 
 export const signUpSchema = Joi.object({
   phone: Joi.string()
-    .pattern(/^(\+)?(88)?01[0-9]{9}\b/)
+    .pattern(/^\+8801[0-9]{9}$/)
     .required()
     .messages({
-      'string.pattern.base':
-        'Invalid phone number. Must be a valid Bangladeshi phone number.',
+      'string.pattern.base': 'Invalid phone number.',
       'any.required': 'Phone number is required',
     }),
   password: Joi.string().min(6).max(16).required().messages({

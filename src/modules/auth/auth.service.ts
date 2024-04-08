@@ -40,6 +40,7 @@ const signUp = async (payload: ISignUpPayload) => {
   const accessData = {
     role: result.role,
     id: result.id,
+    is_claimed: false,
   };
   const accessToken = await jwtToken.createToken(
     accessData,
@@ -59,6 +60,19 @@ const login = async (payload: ILoginPayload) => {
     where: {
       phone,
     },
+    select: {
+      id: true,
+      role: true,
+      phone: true,
+      name: true,
+      password: true,
+      UserInfo: {
+        select: {
+          is_claimed: true,
+          is_in_team: true,
+        },
+      },
+    },
   });
   if (!isUserExist) {
     throw new ApiError(
@@ -77,9 +91,17 @@ const login = async (payload: ILoginPayload) => {
       errorMessages.somethingWrongError
     );
   }
+  const is_claimed = isUserExist.UserInfo
+    ? isUserExist.UserInfo[0].is_claimed
+    : false;
+  const is_in_team = isUserExist.UserInfo
+    ? isUserExist.UserInfo[0].is_in_team
+    : false;
   const accessData = {
     role: isUserExist.role,
     id: isUserExist.id,
+    is_claimed,
+    is_in_team,
   };
   const accessToken = await jwtToken.createToken(
     accessData,
