@@ -39,6 +39,20 @@ export const getUserInfo = async (id: number) => {
   return userInfo;
 };
 
+export const isClaimedUser = async (id: number) => {
+  const userInfo = await prisma.userInfo.findFirst({
+    where: {
+      user_id: id,
+      is_claimed: true,
+      is_in_team: true,
+    },
+  });
+  if (!userInfo) {
+    throw new ApiError(404, errorMsg.unclaimedUser);
+  }
+  return userInfo;
+};
+
 export const updateOrderStatus = async (
   id: number,
   userId: number,

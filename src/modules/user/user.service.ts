@@ -3,6 +3,7 @@ import { errorMessage, mealCost, successMessage } from './user.constant';
 import ApiError from '../../utils/errorHandlers/apiError';
 import {
   getUserInfo,
+  isClaimedUser,
   isValidOrderDate,
   isValidOrderForToday,
   updateOrderStatus,
@@ -14,6 +15,8 @@ const prisma = new PrismaClient();
 
 const placeOrder = async (date: string, userId: number) => {
   const isValidDeliveryDate = isValidOrderDate(date);
+  await isClaimedUser(userId);
+
   if (!isValidDeliveryDate) {
     throw new ApiError(409, errorMessage.invalidDeliveryDate);
   }
@@ -77,6 +80,7 @@ const cancelOrder = async (id: number, userId: number) => {
 };
 
 const updateOrder = async (id: number, userId: number) => {
+  await isClaimedUser(userId);
   const result = updateOrderStatus(
     id,
     userId,

@@ -91,10 +91,10 @@ const login = async (payload: ILoginPayload) => {
       errorMessages.somethingWrongError
     );
   }
-  const is_claimed = isUserExist.UserInfo
+  const is_claimed = isUserExist?.UserInfo.length
     ? isUserExist.UserInfo[0].is_claimed
     : false;
-  const is_in_team = isUserExist.UserInfo
+  const is_in_team = isUserExist?.UserInfo.length
     ? isUserExist.UserInfo[0].is_in_team
     : false;
   const accessData = {
