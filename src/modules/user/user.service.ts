@@ -176,6 +176,24 @@ const userInfo = async (id: number) => {
   if (!result?.id) {
     throw new ApiError(404, errorMessage.unclaimedUser);
   }
+  let teamInfo = {};
+  const getTeamInfo = await prisma.team.findUnique({
+    where: {
+      leader_id: id,
+    },
+  });
+  if (getTeamInfo) {
+    const todayDate = dayjs(new Date()).startOf('hour');
+    const formatTodayDate = todayDate.format('YYYY-MM-DD');
+    const getTodayOrderCount = await prisma.order.count({
+      where: {
+        delivery_date: {
+          equals: `${formatTodayDate}T00:00:00.000Z`,
+        },
+      },
+    });
+    teamInfo = { ...getTeamInfo, order: getTodayOrderCount };
+  }
   const formatInfo = {
     balance: result?.Balance,
     address: result?.address.address,
@@ -186,6 +204,7 @@ const userInfo = async (id: number) => {
     phone: result.user.phone,
     virtual_id: result?.virtual_id,
     is_claimed: result?.is_claimed,
+    teamInfo,
   };
   return formatInfo;
 };
