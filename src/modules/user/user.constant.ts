@@ -20,4 +20,6 @@ export const successMessage = {
   successToCancel: 'Order canceled successfully',
   successToRetrieved: 'Order retrieved successfully',
   orderHistory: 'Order history retrieved successfully',
+  userInfo: 'User info retrieved successfully',
+  transactions: 'Transaction history retrieved successfully',
 };

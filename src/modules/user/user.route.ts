@@ -11,6 +11,7 @@ router
   .get(verifyUser, userController.getUpcomingOrder);
 
 router.route('/order-history').get(verifyUser, userController.getOrderHistory);
+router.route('/transaction').get(verifyUser, userController.getTransaction);
 
 router
   .route('/order/:id')

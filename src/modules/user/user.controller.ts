@@ -78,7 +78,17 @@ const getUserInfo = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: successMessage.successToRetrieved,
+    message: successMessage.userInfo,
+    data: result,
+  });
+});
+const getTransaction = catchAsync(async (req: Request, res: Response) => {
+  const userId = Number(req.user?.id);
+  const result = await userService.getTransaction(userId);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: successMessage.transactions,
     data: result,
   });
 });
@@ -90,4 +100,5 @@ export const userController = {
   getUpcomingOrder,
   getOrderHistory,
   getUserInfo,
+  getTransaction,
 };

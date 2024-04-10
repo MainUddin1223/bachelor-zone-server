@@ -210,6 +210,22 @@ const userInfo = async (id: number) => {
   return formatInfo;
 };
 
+const getTransaction = async (id: number) => {
+  const result = await prisma.transaction.findMany({
+    where: {
+      user_id: id,
+    },
+    select: {
+      amount: true,
+      date: true,
+      transaction_type: true,
+      description: true,
+      id: true,
+    },
+  });
+  return result;
+};
+
 export const userService = {
   placeOrder,
   cancelOrder,
@@ -217,4 +233,5 @@ export const userService = {
   getUpcomingOrder,
   getOrderHistory,
   userInfo,
+  getTransaction,
 };
