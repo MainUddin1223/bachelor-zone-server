@@ -187,6 +187,7 @@ const userInfo = async (id: number) => {
     const formatTodayDate = todayDate.format('YYYY-MM-DD');
     const getTodayOrderCount = await prisma.order.count({
       where: {
+        team_id: getTeamInfo.id,
         delivery_date: {
           equals: `${formatTodayDate}T00:00:00.000Z`,
         },

@@ -6,7 +6,11 @@ import {
   ICreateTeam,
   IListedExpenses,
 } from './admin.interface';
-import { minAmountForClaim, serviceFee, tiffinBoxCost } from './admin.constant';
+import {
+  minAmountForClaim,
+  registrationFee,
+  tiffinBoxCost,
+} from './admin.constant';
 import { generateRandomID } from '../../utils/helpers/helpers';
 import dayjs from 'dayjs';
 // import ApiError from '../../utils/errorHandlers/apiError';
@@ -176,7 +180,7 @@ const claimUser = async (data: IClaimUser) => {
 
   const includeMember = Number(getTeam.member) + 1;
 
-  const calculateBalance = data.balance - (tiffinBoxCost + serviceFee);
+  const calculateBalance = data.balance - (tiffinBoxCost + registrationFee);
   const transaction_type: TransactionType = 'deposit';
 
   const transactions = [
@@ -188,8 +192,8 @@ const claimUser = async (data: IClaimUser) => {
     },
     {
       transaction_type,
-      amount: serviceFee,
-      description: 'Service fee',
+      amount: registrationFee,
+      description: 'Registration fee',
       user_id: data.id,
     },
     {

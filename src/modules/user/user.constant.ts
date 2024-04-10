@@ -1,4 +1,4 @@
-export const mealCost = 70;
+export const mealCost = 75;
 
 export const errorMessage = {
   invalidDeliveryDate: 'Invalid delivery date',
