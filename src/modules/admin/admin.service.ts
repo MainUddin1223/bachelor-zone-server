@@ -274,6 +274,9 @@ const changeTeam = async (teamId: number, userId: number) => {
     where: {
       user_id: userId,
     },
+    include: {
+      team_member: true,
+    },
   });
 
   if (!findUserInfo) {
@@ -303,14 +306,31 @@ const changeTeam = async (teamId: number, userId: number) => {
       'The user is leading a team. To change team user has to give leadership to another team member'
     );
   }
-
-  await prisma.userInfo.update({
-    where: {
-      id: findUserInfo.id,
-    },
-    data: {
-      team_id: teamId,
-    },
+  await prisma.$transaction(async tx => {
+    await tx.team.update({
+      where: {
+        id: findUserInfo.team_id,
+      },
+      data: {
+        member: Number(findUserInfo.team_member.member) - 1,
+      },
+    });
+    await tx.team.update({
+      where: {
+        id: findTeamInfo.id,
+      },
+      data: {
+        member: Number(findTeamInfo.member) + 1,
+      },
+    });
+    await tx.userInfo.update({
+      where: {
+        id: findUserInfo.id,
+      },
+      data: {
+        team_id: teamId,
+      },
+    });
   });
 
   return { message: 'Successfully change the team' };
