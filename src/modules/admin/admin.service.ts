@@ -534,8 +534,25 @@ const getOrders = async (date: any) => {
 
   return result;
 };
-
+const deliverOrder = async (id: number) => {
+  const todayDate = dayjs(new Date()).startOf('hour');
+  const formatTodayDate = todayDate.format('YYYY-MM-DD');
+  const result = await prisma.order.updateMany({
+    where: {
+      team_id: id,
+      status: 'pending',
+      delivery_date: {
+        equals: `${formatTodayDate}T00:00:00.000Z`,
+      },
+    },
+    data: {
+      status: 'received',
+    },
+  });
+  return result;
+};
 export const adminService = {
+  deliverOrder,
   addAddress,
   updateAddress,
   createTeam,

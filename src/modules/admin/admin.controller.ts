@@ -227,6 +227,17 @@ const getOrders = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const deliverOrder = catchAsync(async (req: Request, res: Response) => {
+  const teamId = Number(req.params.id);
+  const result = await adminService.deliverOrder(teamId);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Orders delivered successfully',
+    data: result,
+  });
+});
+
 export const adminController = {
   addAddress,
   updateAddress,
@@ -238,4 +249,5 @@ export const adminController = {
   refundBalance,
   changeLeader,
   getOrders,
+  deliverOrder,
 };

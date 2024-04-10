@@ -16,5 +16,6 @@ router.route('/refund').post(verifyAdmin, adminController.refundBalance);
 router.route('/expense').post(verifyAdmin, adminController.listExpenses);
 router.route('/change-leader').post(verifyAdmin, adminController.changeLeader);
 router.route('/orders').get(verifyAdmin, adminController.getOrders);
+router.route('/orders/:id').patch(verifyAdmin, adminController.deliverOrder);
 
 export default { adminRouter: router };
