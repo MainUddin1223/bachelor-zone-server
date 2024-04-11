@@ -114,7 +114,7 @@ const getOrderHistory = async (id: number, pageNumber: number) => {
   const { skip, take, page } = meta;
   const todayDate = dayjs(new Date()).startOf('hour');
   const formatTodayDate = todayDate.format('YYYY-MM-DD');
-  const upcomingOrders = await prisma.order.findMany({
+  const orderHistory = await prisma.order.findMany({
     skip,
     take,
     where: {
@@ -138,7 +138,7 @@ const getOrderHistory = async (id: number, pageNumber: number) => {
   const totalPage =
     totalCount > take ? Math.ceil(totalCount / Number(take)) : 1;
   return {
-    data: upcomingOrders,
+    data: orderHistory,
     meta: { size: take, total: totalCount, totalPage, currentPage: page },
   };
 };
@@ -210,10 +210,17 @@ const userInfo = async (id: number) => {
   return formatInfo;
 };
 
-const getTransaction = async (id: number) => {
+const getTransaction = async (id: number, pageNumber: number) => {
+  const meta = pagination({ page: pageNumber });
+  const { skip, take, page } = meta;
   const result = await prisma.transaction.findMany({
+    skip,
+    take,
     where: {
       user_id: id,
+    },
+    orderBy: {
+      date: 'desc',
     },
     select: {
       amount: true,
@@ -223,7 +230,13 @@ const getTransaction = async (id: number) => {
       id: true,
     },
   });
-  return result;
+  const totalCount = await prisma.transaction.count();
+  const totalPage =
+    totalCount > take ? Math.ceil(totalCount / Number(take)) : 1;
+  return {
+    data: result,
+    meta: { size: take, total: totalCount, totalPage, currentPage: page },
+  };
 };
 
 export const userService = {

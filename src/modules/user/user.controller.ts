@@ -84,7 +84,8 @@ const getUserInfo = catchAsync(async (req: Request, res: Response) => {
 });
 const getTransaction = catchAsync(async (req: Request, res: Response) => {
   const userId = Number(req.user?.id);
-  const result = await userService.getTransaction(userId);
+  const page = req.query.page ? Number(req.query.page) : 1;
+  const result = await userService.getTransaction(userId, page);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
