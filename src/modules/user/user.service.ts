@@ -35,6 +35,7 @@ const placeOrder = async (date: string, userId: number) => {
   const isOrderExist = await prisma.order.findFirst({
     where: {
       delivery_date,
+      user_id: userId,
     },
   });
   if (isOrderExist) {
