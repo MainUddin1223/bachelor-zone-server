@@ -41,27 +41,19 @@ export const loginSchema = Joi.object({
 });
 
 export const changePasswordSchema = Joi.object({
-  phone: Joi.string()
-    .pattern(/^(\+)?(88)?01[0-9]{9}\b/)
-    .required()
-    .messages({
-      'string.pattern.base':
-        'Invalid phone number. Must be a valid Bangladeshi phone number.',
-      'any.required': 'Phone number is required',
-    }),
   oldPassword: Joi.string().required().messages({
-    'string.min': 'Password must be at least {#limit} characters long',
-    'string.max': 'Password cannot exceed {#limit} characters',
-    'any.required': 'Password is required',
+    'string.min': 'Old password must be at least {#limit} characters long',
+    'string.max': 'Old password cannot exceed {#limit} characters',
+    'any.required': 'Old password is required',
   }),
   newPassword: Joi.string().required().messages({
-    'string.min': 'Password must be at least {#limit} characters long',
-    'string.max': 'Password cannot exceed {#limit} characters',
-    'any.required': 'Password is required',
+    'string.min': 'New password must be at least {#limit} characters long',
+    'string.max': 'New password cannot exceed {#limit} characters',
+    'any.required': 'New password is required',
   }),
   confirmPassword: Joi.string().required().messages({
-    'string.min': 'Password must be at least {#limit} characters long',
-    'string.max': 'Password cannot exceed {#limit} characters',
-    'any.required': 'Password is required',
+    'string.min': 'Confirm password must be at least {#limit} characters long',
+    'string.max': 'Confirm password cannot exceed {#limit} characters',
+    'any.required': 'Confirm password is required',
   }),
 });
