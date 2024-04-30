@@ -46,12 +46,12 @@ export const changePasswordSchema = Joi.object({
     'string.max': 'Old password cannot exceed {#limit} characters',
     'any.required': 'Old password is required',
   }),
-  newPassword: Joi.string().required().messages({
+  newPassword: Joi.string().min(6).max(16).required().messages({
     'string.min': 'New password must be at least {#limit} characters long',
     'string.max': 'New password cannot exceed {#limit} characters',
     'any.required': 'New password is required',
   }),
-  confirmPassword: Joi.string().required().messages({
+  confirmPassword: Joi.string().min(6).max(16).required().messages({
     'string.min': 'Confirm password must be at least {#limit} characters long',
     'string.max': 'Confirm password cannot exceed {#limit} characters',
     'any.required': 'Confirm password is required',

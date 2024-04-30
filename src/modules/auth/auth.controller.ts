@@ -50,7 +50,26 @@ const login = catchAsync(async (req: Request, res: Response) => {
       data: error.details,
     });
   } else {
-    delete req.body.confirmPassword;
+    const result = await authService.login(req.body);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: successMessage.loginSuccess,
+      data: result,
+    });
+  }
+});
+const adminLogin = catchAsync(async (req: Request, res: Response) => {
+  const { error } = loginSchema.validate(req.body);
+
+  if (error) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: error.details[0]?.message,
+      data: error.details,
+    });
+  } else {
     const result = await authService.login(req.body);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
@@ -101,5 +120,6 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
 export const authController = {
   signUp,
   login,
+  adminLogin,
   changePassword,
 };
