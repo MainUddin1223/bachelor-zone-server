@@ -26,6 +26,4 @@ export interface IApiResponse<T> {
 }
 export interface IFilterOption {
   search?: string | undefined;
-  min_price?: number | undefined;
-  max_price?: number | undefined;
 }

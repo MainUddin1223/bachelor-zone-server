@@ -8,7 +8,10 @@ router
   .route('/address')
   .post(verifyAdmin, adminController.addAddress)
   .patch(verifyAdmin, adminController.updateAddress);
-router.route('/team').post(verifyAdmin, adminController.createTeam);
+router
+  .route('/team')
+  .post(verifyAdmin, adminController.createTeam)
+  .get(verifyAdmin, adminController.getTeams);
 router.route('/claim-user').post(verifyAdmin, adminController.claimUser);
 router.route('/change-team').post(verifyAdmin, adminController.changeTeam);
 router.route('/recharge').post(verifyAdmin, adminController.rechargeBalance);

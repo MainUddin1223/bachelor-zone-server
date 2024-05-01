@@ -13,6 +13,8 @@ import {
 } from './admin.constant';
 import { generateRandomID } from '../../utils/helpers/helpers';
 import dayjs from 'dayjs';
+import { pagination } from '../../utils/helpers/pagination';
+import { IFilterOption } from '../../utils/helpers/interface';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
 
@@ -553,6 +555,56 @@ const getOrders = async (date: any) => {
   return result;
 };
 
+const getTeams = async (pageNumber: number, filterOptions: IFilterOption) => {
+  const meta = pagination({ page: pageNumber });
+  const { skip, take, orderBy, page } = meta;
+  const queryOption: { [key: string]: any } = {};
+  if (Object.keys(filterOptions).length) {
+    const { search, ...restOptions } = filterOptions;
+
+    if (search) {
+      queryOption['OR'] = [
+        {
+          name: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+        {
+          address: {
+            address: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+      ];
+    }
+
+    Object.entries(restOptions).forEach(([field, value]) => {
+      queryOption[field] = value;
+    });
+  }
+  const result = await prisma.team.findMany({
+    skip,
+    take,
+    orderBy,
+    where: {
+      ...queryOption,
+    },
+  });
+  const totalCount = await prisma.team.count({
+    where: {
+      ...queryOption,
+    },
+  });
+  const totalPage = totalCount > take ? totalCount / Number(take) : 1;
+  return {
+    result,
+    meta: { page: page, size: take, total: totalCount, totalPage },
+  };
+};
+
 const deliverOrder = async (id: number) => {
   const todayDate = dayjs(new Date()).startOf('hour');
   const formatTodayDate = todayDate.format('YYYY-MM-DD');
@@ -636,5 +688,6 @@ export const adminService = {
   listExpenses,
   changeLeader,
   getOrders,
+  getTeams,
   getUserInfo,
 };

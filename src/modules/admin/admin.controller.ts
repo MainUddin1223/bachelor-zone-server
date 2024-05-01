@@ -14,6 +14,8 @@ import sendResponse from '../../utils/responseHandler/sendResponse';
 import { StatusCodes } from 'http-status-codes';
 import { adminService } from './admin.service';
 import dayjs from 'dayjs';
+import { teamFilters } from './admin.constant';
+import pick from '../../utils/helpers/pick';
 
 const addAddress = catchAsync(async (req: Request, res: Response) => {
   const { error } = addressSchema.validate(req.body);
@@ -247,11 +249,23 @@ const deliverOrder = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getTeams = catchAsync(async (req: Request, res: Response) => {
+  const page = req.query.page ? Number(req.query.page) : 1;
+  const filter = pick(req.query, teamFilters);
+  const result = await adminService.getTeams(page, filter);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Orders delivered successfully',
+    data: result,
+  });
+});
 
 export const adminController = {
   addAddress,
   updateAddress,
   createTeam,
+  getTeams,
   claimUser,
   listExpenses,
   changeTeam,
