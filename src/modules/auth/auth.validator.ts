@@ -16,7 +16,7 @@ export const signUpSchema = Joi.object({
   confirmPassword: Joi.string().min(6).max(16).required().messages({
     'string.min': 'Password must be at least 6 characters long',
     'string.max': 'Password cannot exceed 16 characters',
-    'any.required': 'Password is required',
+    'any.required': 'Confirm password is required',
   }),
   name: Joi.string().required().messages({
     'string.pattern.base': 'Invalid Name',

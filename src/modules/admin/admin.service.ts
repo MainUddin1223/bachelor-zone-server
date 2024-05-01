@@ -51,6 +51,9 @@ const createTeam = async (data: ICreateTeam) => {
     where: {
       id: data.leader_id,
     },
+    include: {
+      UserInfo: true,
+    },
   });
   if (!isUserExist) {
     throw new ApiError(404, 'Leader dose not exist');
@@ -103,14 +106,29 @@ const createTeam = async (data: ICreateTeam) => {
           member: 1,
         },
       });
-      if (!createTeam.id) {
+      const findTeam = await tx.team.findFirst({
+        where: {
+          id: isAccountClaimed.team_id,
+        },
+      });
+      const updateTeamMember = await tx.team.update({
+        where: {
+          id: isAccountClaimed.team_id,
+        },
+        data: {
+          member: Number(findTeam?.member) - 1,
+        },
+      });
+      if (!createTeam.id || !updateTeamMember.id) {
         throw new ApiError(500, 'Failed to create team');
       }
       const updateUserInfo = await tx.userInfo.updateMany({
         where: {
           user_id: data.leader_id,
         },
-        data: {},
+        data: {
+          team_id: createTeam.id,
+        },
       });
       if (!updateUserInfo.count) {
         throw new ApiError(500, 'Failed to create team');
@@ -534,6 +552,7 @@ const getOrders = async (date: any) => {
 
   return result;
 };
+
 const deliverOrder = async (id: number) => {
   const todayDate = dayjs(new Date()).startOf('hour');
   const formatTodayDate = todayDate.format('YYYY-MM-DD');
@@ -551,6 +570,60 @@ const deliverOrder = async (id: number) => {
   });
   return result;
 };
+
+const getUserInfo = async (number: string) => {
+  const getUserInfo = await prisma.auth.findFirst({
+    where: {
+      phone: number,
+    },
+    select: {
+      id: true,
+      phone: true,
+      name: true,
+      UserInfo: {
+        select: {
+          address_id: true,
+        },
+      },
+    },
+  });
+  if (!getUserInfo) {
+    throw new ApiError(404, 'User not found');
+  }
+  if (!getUserInfo?.UserInfo.length) {
+    const addresses = await prisma.address.findMany({
+      select: {
+        address: true,
+        id: true,
+      },
+    });
+    return {
+      phone: getUserInfo?.phone,
+      id: getUserInfo.id,
+      name: getUserInfo?.name,
+      addresses,
+      isSavedAddress: false,
+    };
+  } else {
+    const addresses = await prisma.address.findFirst({
+      where: {
+        id: getUserInfo.UserInfo[0].address_id,
+      },
+      select: {
+        address: true,
+        id: true,
+      },
+    });
+    return {
+      phone: getUserInfo?.phone,
+      name: getUserInfo?.name,
+      id: getUserInfo.id,
+      addresses: [addresses],
+      isSavedAddress: true,
+    };
+  }
+};
+
 export const adminService = {
   deliverOrder,
   addAddress,
@@ -563,4 +636,5 @@ export const adminService = {
   listExpenses,
   changeLeader,
   getOrders,
+  getUserInfo,
 };

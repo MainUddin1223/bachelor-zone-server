@@ -70,7 +70,7 @@ const adminLogin = catchAsync(async (req: Request, res: Response) => {
       data: error.details,
     });
   } else {
-    const result = await authService.login(req.body);
+    const result = await authService.adminLogin(req.body);
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,

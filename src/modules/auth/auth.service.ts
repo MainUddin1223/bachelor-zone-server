@@ -119,9 +119,6 @@ const adminLogin = async (payload: ILoginPayload) => {
   const isUserExist = await prisma.auth.findFirst({
     where: {
       phone,
-      NOT: {
-        role: 'user',
-      },
     },
     select: {
       id: true,
@@ -132,6 +129,12 @@ const adminLogin = async (payload: ILoginPayload) => {
     },
   });
   if (!isUserExist) {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      errorMessages.somethingWrongError
+    );
+  }
+  if (isUserExist.role === 'user') {
     throw new ApiError(
       StatusCodes.INTERNAL_SERVER_ERROR,
       errorMessages.somethingWrongError

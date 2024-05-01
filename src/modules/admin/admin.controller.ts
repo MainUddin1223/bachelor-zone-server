@@ -226,6 +226,16 @@ const getOrders = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getUserInfo = catchAsync(async (req: Request, res: Response) => {
+  const phone = req.body.phone;
+  const result = await adminService.getUserInfo(phone);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'User info retrieved successfully',
+    data: result,
+  });
+});
 
 const deliverOrder = catchAsync(async (req: Request, res: Response) => {
   const teamId = Number(req.params.id);
@@ -250,4 +260,5 @@ export const adminController = {
   changeLeader,
   getOrders,
   deliverOrder,
+  getUserInfo,
 };

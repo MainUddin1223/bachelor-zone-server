@@ -17,5 +17,6 @@ router.route('/expense').post(verifyAdmin, adminController.listExpenses);
 router.route('/change-leader').post(verifyAdmin, adminController.changeLeader);
 router.route('/orders').get(verifyAdmin, adminController.getOrders);
 router.route('/orders/:id').patch(verifyAdmin, adminController.deliverOrder);
+router.route('/user-info').patch(verifyAdmin, adminController.getUserInfo);
 
 export default { adminRouter: router };
