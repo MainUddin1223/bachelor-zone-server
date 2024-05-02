@@ -12,6 +12,8 @@ router
   .route('/team')
   .post(verifyAdmin, adminController.createTeam)
   .get(verifyAdmin, adminController.getTeams);
+router.route('/team/:id').get(verifyAdmin, adminController.getTeamInfoById);
+router.route('/boxes/:id').patch(verifyAdmin, adminController.updateDueBoxes);
 router.route('/claim-user').post(verifyAdmin, adminController.claimUser);
 router.route('/change-team').post(verifyAdmin, adminController.changeTeam);
 router.route('/recharge').post(verifyAdmin, adminController.rechargeBalance);

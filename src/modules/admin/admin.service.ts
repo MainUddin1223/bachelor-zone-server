@@ -556,7 +556,7 @@ const getOrders = async (date: any) => {
 };
 
 const getTeams = async (pageNumber: number, filterOptions: IFilterOption) => {
-  const meta = pagination({ page: pageNumber });
+  const meta = pagination({ page: pageNumber, limit: 10 });
   const { skip, take, orderBy, page } = meta;
   const queryOption: { [key: string]: any } = {};
   if (Object.keys(filterOptions).length) {
@@ -591,6 +591,26 @@ const getTeams = async (pageNumber: number, filterOptions: IFilterOption) => {
     orderBy,
     where: {
       ...queryOption,
+    },
+    select: {
+      address_id: true,
+      name: true,
+      due_boxes: true,
+      id: true,
+      member: true,
+
+      address: {
+        select: {
+          address: true,
+          id: true,
+        },
+      },
+      leader: {
+        select: {
+          name: true,
+          phone: true,
+        },
+      },
     },
   });
   const totalCount = await prisma.team.count({
@@ -676,6 +696,48 @@ const getUserInfo = async (number: string) => {
   }
 };
 
+const getTeamInfoById = async (id: number) => {
+  const result = await prisma.team.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      address: true,
+      leader: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+      userInfo: {
+        include: {
+          user: {
+            select: {
+              id: true,
+              name: true,
+              phone: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  return result;
+};
+
+const updateDueBoxes = async (id: number, amount: number) => {
+  const result = await prisma.team.update({
+    where: {
+      id,
+    },
+    data: {
+      due_boxes: amount,
+    },
+  });
+  return result;
+};
+
 export const adminService = {
   deliverOrder,
   addAddress,
@@ -690,4 +752,6 @@ export const adminService = {
   getOrders,
   getTeams,
   getUserInfo,
+  getTeamInfoById,
+  updateDueBoxes,
 };

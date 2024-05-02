@@ -17,6 +17,12 @@ export const updateAddressSchema = Joi.object({
     'any.required': 'Id is required',
   }),
 });
+export const updateDueBoxesSchema = Joi.object({
+  amount: Joi.number().required().min(0).messages({
+    'string.pattern.base': 'Invalid Amount',
+    'any.required': 'Amount is required',
+  }),
+}).strict();
 
 export const CreateTeamSchema = Joi.object({
   name: Joi.string().required().messages({

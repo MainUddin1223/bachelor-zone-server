@@ -9,6 +9,7 @@ import {
   changeLeaderSchema,
   expensesSchema,
   updateAddressSchema,
+  updateDueBoxesSchema,
 } from './admin.validator';
 import sendResponse from '../../utils/responseHandler/sendResponse';
 import { StatusCodes } from 'http-status-codes';
@@ -256,9 +257,40 @@ const getTeams = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
-    message: 'Orders delivered successfully',
+    message: 'Teams retrieved successfully',
     data: result,
   });
+});
+const getTeamInfoById = catchAsync(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const result = await adminService.getTeamInfoById(id);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Team info retrieved successfully',
+    data: result,
+  });
+});
+const updateDueBoxes = catchAsync(async (req: Request, res: Response) => {
+  const { error } = updateDueBoxesSchema.validate(req.body);
+  if (error) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: error.details[0]?.message,
+      data: error.details,
+    });
+  } else {
+    const id = Number(req.params.id);
+    const amount = Number(req.body.amount);
+    const result = await adminService.updateDueBoxes(id, amount);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Expenses listed successfully',
+      data: result,
+    });
+  }
 });
 
 export const adminController = {
@@ -275,4 +307,6 @@ export const adminController = {
   getOrders,
   deliverOrder,
   getUserInfo,
+  getTeamInfoById,
+  updateDueBoxes,
 };
