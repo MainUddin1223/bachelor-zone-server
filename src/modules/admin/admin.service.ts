@@ -474,14 +474,52 @@ const changeLeader = async (leaderId: number, team_id: number) => {
   return { message: `Successfully changed the leader` };
 };
 
-const getOrders = async (date: any) => {
+const getOrders = async (
+  date: any,
+  filterOptions: IFilterOption,
+  status: any
+) => {
   const todayStartOfDay = dayjs(date).startOf('hour');
 
   const startDate = todayStartOfDay.format('YYYY-MM-DD[T]00:00:00.000Z');
   const endDate = todayStartOfDay.format('YYYY-MM-DD[T]23:59:59.000Z');
+
+  const queryOption: { [key: string]: any } = {};
+  if (Object.keys(filterOptions).length) {
+    const { search, ...restOptions } = filterOptions;
+
+    if (search) {
+      queryOption['OR'] = [
+        {
+          team: {
+            address: {
+              address: {
+                contains: search,
+                mode: 'insensitive',
+              },
+            },
+          },
+        },
+        {
+          team: {
+            name: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+      ];
+    }
+
+    Object.entries(restOptions).forEach(([field, value]) => {
+      queryOption[field] = value;
+    });
+  }
+
   const orders = await prisma.order.findMany({
     where: {
-      status: 'pending',
+      ...queryOption,
+      status,
       AND: [
         {
           delivery_date: {
@@ -511,6 +549,13 @@ const getOrders = async (date: any) => {
           name: true,
         },
       },
+      user: {
+        select: {
+          name: true,
+          id: true,
+          phone: true,
+        },
+      },
     },
   });
 
@@ -522,6 +567,7 @@ const getOrders = async (date: any) => {
     const {
       team_id,
       status,
+      delivery_date,
       team: {
         name: team_name,
         leader: { name: leaderName, phone: leaderPhoneNumber },
@@ -536,23 +582,40 @@ const getOrders = async (date: any) => {
       aggregatedData[team_id] = {
         team_id,
         team_name,
+        delivery_date,
         leaderName,
         leaderPhoneNumber,
         status,
         due_boxes,
         address: address?.address,
-        order_count: 1, // Initialize order count to 1
+        order_count: 1,
+        orderList: [
+          {
+            status: item.status,
+            delivery_date: item.delivery_date,
+            user_name: item.user.name,
+            user_id: item.user.id,
+            user_phone: item.user.phone,
+          },
+        ], // Initialize order count to 1
       };
     } else {
       // If it exists, increment the order count
       aggregatedData[team_id].order_count++;
+      aggregatedData[team_id].orderList.push({
+        status: item.status,
+        delivery_date: item.delivery_date,
+        user_name: item.user.name,
+        user_id: item.user.id,
+        user_phone: item.user.phone,
+      });
     }
   });
 
   // Convert the aggregatedData object into an array
   const result = Object.values(aggregatedData);
 
-  return result;
+  return { result };
 };
 
 const getTeams = async (pageNumber: number, filterOptions: IFilterOption) => {

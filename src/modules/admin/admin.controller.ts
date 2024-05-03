@@ -220,8 +220,10 @@ const changeLeader = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getOrders = catchAsync(async (req: Request, res: Response) => {
-  const date = req.query.date ? req.query.date : dayjs(Date.now());
-  const result = await adminService.getOrders(date);
+  const date = dayjs(Date.now());
+  const filter = pick(req.query, teamFilters);
+  const status = req?.query?.status ? req?.query?.status : 'pending';
+  const result = await adminService.getOrders(date, filter, status);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,

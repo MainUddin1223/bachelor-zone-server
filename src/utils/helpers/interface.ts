@@ -27,3 +27,7 @@ export interface IApiResponse<T> {
 export interface IFilterOption {
   search?: string | undefined;
 }
+export interface IOrderFilter {
+  search?: string | undefined;
+  status: 'pending' | 'canceled' | 'received';
+}

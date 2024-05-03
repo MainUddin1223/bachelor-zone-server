@@ -26,4 +26,6 @@ export interface AggregatedOrder {
   address?: string;
   order_count: number;
   due_boxes: number;
+  orderList: any[];
+  delivery_date: Date;
 }
