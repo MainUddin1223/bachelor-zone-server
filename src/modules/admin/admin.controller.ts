@@ -5,6 +5,7 @@ import {
   ClaimUserSchema,
   CreateTeamSchema,
   RechargeSchema,
+  RefundSchema,
   addressSchema,
   changeLeaderSchema,
   expensesSchema,
@@ -129,7 +130,7 @@ const rechargeBalance = catchAsync(async (req: Request, res: Response) => {
 });
 
 const refundBalance = catchAsync(async (req: Request, res: Response) => {
-  const { error } = RechargeSchema.validate(req.body);
+  const { error } = RefundSchema.validate(req.body);
 
   if (error) {
     sendResponse(res, {
