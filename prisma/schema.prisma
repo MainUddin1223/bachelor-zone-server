@@ -69,6 +69,7 @@ model Team {
   member     Int        @default(0)
   due_boxes  Int        @default(0)
   leader_id  Int        @unique
+  is_deleted Boolean    @default(false)
   leader     Auth       @relation(fields: [leader_id], references: [id])
   address    Address?   @relation(fields: [address_id], references: [id])
   createdAt  DateTime   @default(now())

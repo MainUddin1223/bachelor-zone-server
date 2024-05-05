@@ -294,6 +294,18 @@ const updateDueBoxes = catchAsync(async (req: Request, res: Response) => {
     });
   }
 });
+const getUsers = catchAsync(async (req: Request, res: Response) => {
+  const page = req.query.page ? Number(req.query.page) : 1;
+  const status = req.query?.status ? req.query?.status : 'all';
+  const filter = pick(req.query, teamFilters);
+  const result = await adminService.getUsers(status, page, filter);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Users retrieved successfully',
+    data: result,
+  });
+});
 
 export const adminController = {
   addAddress,
@@ -311,4 +323,5 @@ export const adminController = {
   getUserInfo,
   getTeamInfoById,
   updateDueBoxes,
+  getUsers,
 };

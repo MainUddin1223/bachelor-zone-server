@@ -15,6 +15,7 @@ import { generateRandomID } from '../../utils/helpers/helpers';
 import dayjs from 'dayjs';
 import { pagination } from '../../utils/helpers/pagination';
 import { IFilterOption } from '../../utils/helpers/interface';
+import { adminUserService } from './admin.user.service';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
 
@@ -654,6 +655,7 @@ const getTeams = async (pageNumber: number, filterOptions: IFilterOption) => {
     orderBy,
     where: {
       ...queryOption,
+      is_deleted: false,
     },
     select: {
       address_id: true,
@@ -710,6 +712,7 @@ const getUserInfo = async (number: string) => {
   const getUserInfo = await prisma.auth.findFirst({
     where: {
       phone: number,
+      is_deleted: false,
     },
     select: {
       id: true,
@@ -760,9 +763,29 @@ const getUserInfo = async (number: string) => {
 };
 
 const getTeamInfoById = async (id: number) => {
+  const userInfo = await prisma.userInfo.findMany({
+    where: {
+      team_id: id,
+      is_claimed: true,
+      user: {
+        is_deleted: false,
+      },
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+    },
+  });
+
   const result = await prisma.team.findUnique({
     where: {
       id,
+      is_deleted: false,
     },
     include: {
       address: true,
@@ -773,26 +796,16 @@ const getTeamInfoById = async (id: number) => {
           phone: true,
         },
       },
-      userInfo: {
-        include: {
-          user: {
-            select: {
-              id: true,
-              name: true,
-              phone: true,
-            },
-          },
-        },
-      },
     },
   });
-  return result;
+  return { ...result, userInfo };
 };
 
 const updateDueBoxes = async (id: number, amount: number) => {
   const result = await prisma.team.update({
     where: {
       id,
+      is_deleted: false,
     },
     data: {
       due_boxes: amount,
@@ -801,7 +814,31 @@ const updateDueBoxes = async (id: number, amount: number) => {
   return result;
 };
 
+const deleteUser = async (id: number) => {
+  const getUser = await prisma.auth.findFirst({
+    where: {
+      id,
+      is_deleted: false,
+    },
+  });
+  if (!getUser) {
+    throw new ApiError(404, 'User not found');
+  } else {
+    const result = await prisma.auth.update({
+      where: {
+        id,
+      },
+      data: {
+        is_deleted: true,
+        phone: getUser.phone + new Date(),
+      },
+    });
+    return result;
+  }
+};
+
 export const adminService = {
+  ...adminUserService,
   deliverOrder,
   addAddress,
   updateAddress,
@@ -817,4 +854,5 @@ export const adminService = {
   getUserInfo,
   getTeamInfoById,
   updateDueBoxes,
+  deleteUser,
 };
