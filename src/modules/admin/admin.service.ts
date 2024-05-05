@@ -378,7 +378,7 @@ const rechargeBalance = async (id: number, balance: number) => {
         id: getUser.id,
       },
       data: {
-        Balance: balance,
+        Balance: balance + Number(getUser.Balance),
       },
     });
     if (!recharge.Balance) {
