@@ -95,4 +95,74 @@ const getUsers = async (
     meta: { page, size: take, total: totalCount, totalPage },
   };
 };
-export const adminUserService = { getUsers };
+
+const getUserById = async (id: number) => {
+  const result = await prisma.auth.findUnique({
+    where: {
+      id,
+      is_deleted: false,
+    },
+    select: {
+      name: true,
+      phone: true,
+      UserInfo: {
+        select: {
+          Balance: true,
+          is_claimed: true,
+          address: true,
+          id: true,
+        },
+      },
+      teams: {
+        select: {
+          name: true,
+          id: true,
+          address: {
+            select: {
+              address: true,
+              id: true,
+              Team: {
+                select: {
+                  id: true,
+                  address_id: true,
+                  name: true,
+                  member: true,
+                  leader: {
+                    select: {
+                      name: true,
+                      phone: true,
+                    },
+                  },
+                  address: {
+                    select: {
+                      address: true,
+                      id: true,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      Order: {
+        take: 15,
+        select: {
+          delivery_date: true,
+          status: true,
+        },
+      },
+      Transaction: {
+        take: 15,
+        select: {
+          date: true,
+          transaction_type: true,
+          amount: true,
+          description: true,
+        },
+      },
+    },
+  });
+  return { ...result, teams: result?.teams[0], UserInfo: result?.UserInfo[0] };
+};
+export const adminUserService = { getUsers, getUserById };

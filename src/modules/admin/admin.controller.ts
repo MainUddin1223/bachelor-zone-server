@@ -140,8 +140,13 @@ const refundBalance = catchAsync(async (req: Request, res: Response) => {
     });
   } else {
     const balance = Number(req.body.balance);
+    const description = req.body.description;
     const userId = Number(req.body.userId);
-    const result = await adminService.refundBalance(userId, balance);
+    const result = await adminService.refundBalance(
+      userId,
+      balance,
+      description
+    );
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
@@ -306,6 +311,17 @@ const getUsers = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getUserById = catchAsync(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  console.log(id);
+  const result = await adminService.getUserById(id);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'User details retrieved successfully',
+    data: result,
+  });
+});
 
 export const adminController = {
   addAddress,
@@ -324,4 +340,5 @@ export const adminController = {
   getTeamInfoById,
   updateDueBoxes,
   getUsers,
+  getUserById,
 };

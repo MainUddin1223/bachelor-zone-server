@@ -109,6 +109,26 @@ export const RechargeSchema = Joi.object({
     })
     .strict(),
 });
+export const RefundSchema = Joi.object({
+  userId: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid user Id',
+      'any.required': 'User Id is required',
+    })
+    .strict(),
+  balance: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid balance',
+      'any.required': 'Balance is required',
+    })
+    .strict(),
+  description: Joi.string().required().messages({
+    'string.pattern.base': 'Invalid description name',
+    'any.required': 'Description is required',
+  }),
+});
 
 export const changeLeaderSchema = Joi.object({
   leaderId: Joi.number()

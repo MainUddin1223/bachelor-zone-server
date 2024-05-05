@@ -398,7 +398,11 @@ const rechargeBalance = async (id: number, balance: number) => {
   return result;
 };
 
-const refundBalance = async (id: number, balance: number) => {
+const refundBalance = async (
+  id: number,
+  balance: number,
+  description: string
+) => {
   const transaction_type: TransactionType = 'refund';
 
   const result = await prisma.$transaction(async tx => {
@@ -431,7 +435,7 @@ const refundBalance = async (id: number, balance: number) => {
     await tx.transaction.create({
       data: {
         transaction_type,
-        description: 'Refund recharge',
+        description,
         amount: balance,
         user_id: id,
       },
