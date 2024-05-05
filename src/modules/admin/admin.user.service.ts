@@ -154,6 +154,9 @@ const getUserById = async (id: number) => {
       },
       Transaction: {
         take: 15,
+        orderBy: {
+          createdAt: 'desc',
+        },
         select: {
           date: true,
           transaction_type: true,
