@@ -271,6 +271,14 @@ const getTeams = catchAsync(async (req: Request, res: Response) => {
 });
 const getTeamInfoById = catchAsync(async (req: Request, res: Response) => {
   const id = Number(req.params.id);
+  if (!id) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: 'User id missing',
+      data: 'User id missing',
+    });
+  }
   const result = await adminService.getTeamInfoById(id);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
@@ -290,6 +298,14 @@ const updateDueBoxes = catchAsync(async (req: Request, res: Response) => {
     });
   } else {
     const id = Number(req.params.id);
+    if (!id) {
+      sendResponse(res, {
+        statusCode: StatusCodes.NOT_ACCEPTABLE,
+        success: false,
+        message: 'User id missing',
+        data: 'User id missing',
+      });
+    }
     const amount = Number(req.body.amount);
     const result = await adminService.updateDueBoxes(id, amount);
     sendResponse(res, {
@@ -314,8 +330,33 @@ const getUsers = catchAsync(async (req: Request, res: Response) => {
 });
 const getUserById = catchAsync(async (req: Request, res: Response) => {
   const id = Number(req.params.id);
-  console.log(id);
+  if (!id) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: 'User id missing',
+      data: 'User id missing',
+    });
+  }
   const result = await adminService.getUserById(id);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'User details retrieved successfully',
+    data: result,
+  });
+});
+const getUnclaimUserById = catchAsync(async (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  if (!id) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: 'User id missing',
+      data: 'User id missing',
+    });
+  }
+  const result = await adminService.getUnclaimedUser(id);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
@@ -342,4 +383,5 @@ export const adminController = {
   updateDueBoxes,
   getUsers,
   getUserById,
+  getUnclaimUserById,
 };

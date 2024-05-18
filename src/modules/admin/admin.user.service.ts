@@ -168,4 +168,75 @@ const getUserById = async (id: number) => {
   });
   return { ...result, teams: result?.teams[0], UserInfo: result?.UserInfo[0] };
 };
-export const adminUserService = { getUsers, getUserById };
+
+const getUnclaimedUser = async (id: number) => {
+  const result = await prisma.userInfo.findFirst({
+    where: {
+      user_id: id,
+      is_claimed: false,
+    },
+    select: {
+      team_member: {
+        select: {
+          id: true,
+          name: true,
+          leader: {
+            select: {
+              name: true,
+              phone: true,
+            },
+          },
+        },
+      },
+      user: {
+        select: {
+          name: true,
+          phone: true,
+        },
+      },
+      address: {
+        select: {
+          address: true,
+          id: true,
+        },
+      },
+    },
+  });
+  if (result) {
+    return result;
+  } else {
+    const authInfo = await prisma.auth.findUnique({
+      where: {
+        id,
+      },
+      select: {
+        name: true,
+        phone: true,
+      },
+    });
+    const address = await prisma.address.findMany({
+      select: {
+        id: true,
+        address: true,
+        Team: {
+          where: {
+            is_deleted: false,
+          },
+          select: {
+            id: true,
+            name: true,
+            leader: {
+              select: {
+                name: true,
+                phone: true,
+              },
+            },
+          },
+        },
+      },
+    });
+    return { authInfo, address };
+  }
+};
+
+export const adminUserService = { getUsers, getUserById, getUnclaimedUser };

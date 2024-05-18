@@ -25,5 +25,8 @@ router.route('/orders/:id').patch(verifyAdmin, adminController.deliverOrder);
 router.route('/user-info').patch(verifyAdmin, adminController.getUserInfo);
 router.route('/users').get(verifyAdmin, adminController.getUsers);
 router.route('/users/:id').get(verifyAdmin, adminController.getUserById);
+router
+  .route('/unclaimed-users/:id')
+  .get(verifyAdmin, adminController.getUnclaimUserById);
 
 export default { adminRouter: router };
