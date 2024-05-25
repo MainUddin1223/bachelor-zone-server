@@ -6,11 +6,7 @@ import {
   ICreateTeam,
   IListedExpenses,
 } from './admin.interface';
-import {
-  minAmountForClaim,
-  registrationFee,
-  tiffinBoxCost,
-} from './admin.constant';
+import { registrationFee, tiffinBoxCost } from './admin.constant';
 import { generateRandomID } from '../../utils/helpers/helpers';
 import dayjs from 'dayjs';
 import { pagination } from '../../utils/helpers/pagination';
@@ -170,10 +166,6 @@ const createTeam = async (data: ICreateTeam) => {
 };
 
 const claimUser = async (data: IClaimUser) => {
-  if (minAmountForClaim > data.balance) {
-    throw new ApiError(402, `Minimum balance should be ${minAmountForClaim}`);
-  }
-
   const isClaimed = await prisma.userInfo.findFirst({
     where: {
       user_id: data.id,
@@ -240,8 +232,13 @@ const claimUser = async (data: IClaimUser) => {
           },
         });
         if (claimUser.is_claimed) {
-          await tx.transaction.createMany({
-            data: transactions,
+          await tx.transaction.create({
+            data: {
+              transaction_type,
+              amount: data.balance,
+              description: 'Balance recharge',
+              user_id: data.id,
+            },
           });
 
           await tx.team.update({
@@ -268,7 +265,7 @@ const claimUser = async (data: IClaimUser) => {
           is_in_team: true,
           is_claimed: true,
           user_id: data.id,
-          Balance: data.balance,
+          Balance: calculateBalance,
           team_id: data.teamId,
         },
       });

@@ -111,32 +111,38 @@ const getUserById = async (id: number) => {
           is_claimed: true,
           address: true,
           id: true,
-        },
-      },
-      teams: {
-        select: {
-          name: true,
-          id: true,
-          address: {
+          team_member: {
             select: {
-              address: true,
+              name: true,
               id: true,
-              Team: {
+              leader: {
                 select: {
-                  id: true,
-                  address_id: true,
                   name: true,
-                  member: true,
-                  leader: {
+                  phone: true,
+                },
+              },
+              address: {
+                select: {
+                  address: true,
+                  id: true,
+                  Team: {
                     select: {
-                      name: true,
-                      phone: true,
-                    },
-                  },
-                  address: {
-                    select: {
-                      address: true,
                       id: true,
+                      address_id: true,
+                      name: true,
+                      member: true,
+                      leader: {
+                        select: {
+                          name: true,
+                          phone: true,
+                        },
+                      },
+                      address: {
+                        select: {
+                          address: true,
+                          id: true,
+                        },
+                      },
                     },
                   },
                 },
@@ -166,7 +172,11 @@ const getUserById = async (id: number) => {
       },
     },
   });
-  return { ...result, teams: result?.teams[0], UserInfo: result?.UserInfo[0] };
+  return {
+    ...result,
+    teams: result?.UserInfo[0]?.team_member,
+    UserInfo: result?.UserInfo[0],
+  };
 };
 
 const getUnclaimedUser = async (id: number) => {
@@ -200,6 +210,7 @@ const getUnclaimedUser = async (id: number) => {
           id: true,
         },
       },
+      Balance: true,
     },
   });
   if (result) {

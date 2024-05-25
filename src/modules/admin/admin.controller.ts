@@ -16,7 +16,7 @@ import sendResponse from '../../utils/responseHandler/sendResponse';
 import { StatusCodes } from 'http-status-codes';
 import { adminService } from './admin.service';
 import dayjs from 'dayjs';
-import { teamFilters } from './admin.constant';
+import { minAmountForClaim, teamFilters } from './admin.constant';
 import pick from '../../utils/helpers/pick';
 
 const addAddress = catchAsync(async (req: Request, res: Response) => {
@@ -66,7 +66,7 @@ const updateAddress = catchAsync(async (req: Request, res: Response) => {
 
 const claimUser = catchAsync(async (req: Request, res: Response) => {
   const { error } = ClaimUserSchema.validate(req.body);
-
+  console.log(req.body);
   if (error) {
     sendResponse(res, {
       statusCode: StatusCodes.NOT_ACCEPTABLE,
@@ -75,13 +75,22 @@ const claimUser = catchAsync(async (req: Request, res: Response) => {
       data: error.details,
     });
   } else {
-    const result = await adminService.claimUser(req.body);
-    sendResponse(res, {
-      statusCode: StatusCodes.OK,
-      success: true,
-      message: 'Category added successfully',
-      data: result,
-    });
+    if (minAmountForClaim > req.body.balance) {
+      sendResponse(res, {
+        statusCode: StatusCodes.NOT_ACCEPTABLE,
+        success: false,
+        message: `Minimum balance should be ${minAmountForClaim}`,
+        data: `Minimum balance should be ${minAmountForClaim}`,
+      });
+    } else {
+      const result = await adminService.claimUser(req.body);
+      sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: 'User claimed successfully',
+        data: result,
+      });
+    }
   }
 });
 
