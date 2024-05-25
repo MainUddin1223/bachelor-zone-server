@@ -493,6 +493,14 @@ const getOrders = async (
     if (search) {
       queryOption['OR'] = [
         {
+          user: {
+            phone: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
           team: {
             address: {
               address: {
@@ -617,7 +625,7 @@ const getOrders = async (
   // Convert the aggregatedData object into an array
   const result = Object.values(aggregatedData);
 
-  return { result };
+  return { result, orders };
 };
 
 const getTeams = async (pageNumber: number, filterOptions: IFilterOption) => {
