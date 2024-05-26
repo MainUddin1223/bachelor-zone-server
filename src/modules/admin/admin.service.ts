@@ -872,7 +872,7 @@ const getTotalStatics = async () => {
   });
 
   // Total Delivered orders
-  const totalOrder = await prisma.order.count({
+  const totalCompletedOrderSoFar = await prisma.order.count({
     where: {
       status: {
         equals: 'received',
@@ -983,17 +983,56 @@ const getTotalStatics = async () => {
       },
     },
   });
-  console.log(serviceAndBoxFee);
   return {
-    ...orderData,
-    totalOrder,
-    costOfTheDay,
-    depositOfTheDay,
-    totalUsers,
-    teamData,
-    totalRemainingBalance,
-    totalTransaction,
-    serviceAndBoxFee,
+    result: {
+      ...orderData,
+      totalCompletedOrderSoFar,
+      costOfTheDay: costOfTheDay?._sum?.amount ? costOfTheDay?._sum?.amount : 0,
+      depositOfTheDay: depositOfTheDay?._sum?.amount
+        ? depositOfTheDay?._sum?.amount
+        : 0,
+      totalUsers,
+      totalTeam: teamData?._count?.id,
+      totalDueBoxes: teamData?._sum?.due_boxes ? teamData?._sum?.due_boxes : 0,
+      totalRemainingBalance: totalRemainingBalance?._sum?.Balance
+        ? totalRemainingBalance?._sum?.Balance
+        : 0,
+      totalTransaction: totalTransaction?._sum?.amount,
+      serviceAndBoxFee: serviceAndBoxFee?._sum?.amount
+        ? serviceAndBoxFee?._sum?.amount
+        : 0,
+    },
+  };
+};
+const getExpenses = async (pageNumber: number) => {
+  const meta = pagination({ page: pageNumber, limit: 5 });
+  const { skip, take, orderBy, page } = meta;
+
+  const totalExpenses = await prisma.expenses.aggregate({
+    _sum: {
+      amount: true,
+    },
+  });
+  const expenses = await prisma.expenses.findMany({
+    skip,
+    orderBy,
+    select: {
+      amount: true,
+      date: true,
+      product_name: true,
+      quantity: true,
+    },
+  });
+  const totalCount = await prisma.expenses.count({});
+  const totalPage = totalCount > take ? totalCount / Number(take) : 1;
+  return {
+    result: {
+      expenses,
+      totalExpenses: totalExpenses?._sum?.amount
+        ? totalExpenses?._sum?.amount
+        : 0,
+    },
+    meta: { page: page, size: take, total: totalCount, totalPage },
   };
 };
 
@@ -1016,4 +1055,5 @@ export const adminService = {
   updateDueBoxes,
   deleteUser,
   getTotalStatics,
+  getExpenses,
 };

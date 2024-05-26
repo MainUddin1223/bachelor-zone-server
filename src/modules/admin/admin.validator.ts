@@ -163,9 +163,6 @@ export const expensesSchema = Joi.object({
       'any.required': 'Amount is required',
     })
     .strict(),
-  date: Joi.date().optional().messages({
-    'date.base': 'Invalid amount',
-  }),
 });
 
 export const getOrderSchema = Joi.object({

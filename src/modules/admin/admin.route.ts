@@ -18,7 +18,10 @@ router.route('/claim-user').post(verifyAdmin, adminController.claimUser);
 router.route('/change-team').post(verifyAdmin, adminController.changeTeam);
 router.route('/recharge').post(verifyAdmin, adminController.rechargeBalance);
 router.route('/refund').post(verifyAdmin, adminController.refundBalance);
-router.route('/expense').post(verifyAdmin, adminController.listExpenses);
+router
+  .route('/expense')
+  .get(verifyAdmin, adminController.getExpenses)
+  .post(verifyAdmin, adminController.listExpenses);
 router.route('/change-leader').post(verifyAdmin, adminController.changeLeader);
 router.route('/orders').get(verifyAdmin, adminController.getOrders);
 router.route('/orders/:id').patch(verifyAdmin, adminController.deliverOrder);
