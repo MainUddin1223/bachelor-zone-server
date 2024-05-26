@@ -373,6 +373,15 @@ const getUnclaimUserById = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getTotalStatics = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.getTotalStatics();
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Data retrieved successfully',
+    data: result,
+  });
+});
 
 export const adminController = {
   addAddress,
@@ -393,4 +402,5 @@ export const adminController = {
   getUsers,
   getUserById,
   getUnclaimUserById,
+  getTotalStatics,
 };

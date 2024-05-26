@@ -846,6 +846,157 @@ const deleteUser = async (id: number) => {
   }
 };
 
+const getTotalStatics = async () => {
+  const date = new Date();
+  const todayStartOfDay = dayjs(date).startOf('hour');
+
+  const startDate = todayStartOfDay.format('YYYY-MM-DD[T]00:00:00.000Z');
+  const endDate = todayStartOfDay.format('YYYY-MM-DD[T]23:59:59.000Z');
+
+  //Todays total order , delivered,canceled,pending
+  const getOrders = await prisma.order.findMany({
+    where: {
+      AND: [
+        {
+          delivery_date: {
+            gte: startDate,
+          },
+        },
+        {
+          delivery_date: {
+            lte: endDate,
+          },
+        },
+      ],
+    },
+  });
+
+  // Total Delivered orders
+  const totalOrder = await prisma.order.count({
+    where: {
+      status: {
+        equals: 'received',
+      },
+    },
+  });
+
+  const initialOrderData = {
+    totalOrder: getOrders.length,
+    deliveredOrder: 0,
+    remainingOrder: 0,
+    canceledOrder: 0,
+  };
+
+  const orderData = getOrders.reduce((acc, order) => {
+    if (order.status === 'pending') {
+      acc.remainingOrder += 1;
+    } else if (order.status === 'received') {
+      acc.deliveredOrder += 1;
+    } else {
+      acc.canceledOrder += 1;
+    }
+    return acc;
+  }, initialOrderData);
+
+  //cost of the day
+  const costOfTheDay = await prisma.expenses.aggregate({
+    _sum: {
+      amount: true,
+    },
+    where: {
+      AND: [
+        {
+          createdAt: {
+            gte: startDate,
+          },
+        },
+        {
+          createdAt: {
+            lte: endDate,
+          },
+        },
+      ],
+    },
+  });
+  // today's total deposit
+  const depositOfTheDay = await prisma.transaction.aggregate({
+    _sum: {
+      amount: true,
+    },
+    _count: {
+      id: true,
+    },
+    where: {
+      AND: [
+        {
+          date: {
+            gte: startDate,
+          },
+        },
+        {
+          date: {
+            lte: endDate,
+          },
+        },
+      ],
+    },
+  });
+
+  //total users
+  const totalUsers = await prisma.userInfo.count({
+    where: {
+      is_claimed: true,
+    },
+  });
+  // due boxes and total team
+  const teamData = await prisma.team.aggregate({
+    _sum: {
+      due_boxes: true,
+    },
+    _count: {
+      id: true,
+    },
+  });
+  //total remaining balance
+  const totalRemainingBalance = await prisma.userInfo.aggregate({
+    _sum: {
+      Balance: true,
+    },
+  });
+  //total transaction
+  const totalTransaction = await prisma.transaction.aggregate({
+    _sum: {
+      amount: true,
+    },
+    where: {
+      transaction_type: 'deposit',
+    },
+  });
+  //tiffin and service fee
+  const serviceAndBoxFee = await prisma.transaction.aggregate({
+    _sum: {
+      amount: true,
+    },
+    where: {
+      description: {
+        in: ['Service fee', 'Tiffin box cost'], // Filter by types 'deposit' and 'due'
+      },
+    },
+  });
+  console.log(serviceAndBoxFee);
+  return {
+    ...orderData,
+    totalOrder,
+    costOfTheDay,
+    depositOfTheDay,
+    totalUsers,
+    teamData,
+    totalRemainingBalance,
+    totalTransaction,
+    serviceAndBoxFee,
+  };
+};
+
 export const adminService = {
   ...adminUserService,
   deliverOrder,
@@ -864,4 +1015,5 @@ export const adminService = {
   getTeamInfoById,
   updateDueBoxes,
   deleteUser,
+  getTotalStatics,
 };

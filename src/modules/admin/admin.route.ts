@@ -3,7 +3,7 @@ import { verifyAdmin } from '../../utils/jwtHelpers/verifyAuth';
 import { adminController } from './admin.controller';
 
 const router = express.Router();
-
+router.route('/statics').get(verifyAdmin, adminController.getTotalStatics);
 router
   .route('/address')
   .post(verifyAdmin, adminController.addAddress)
