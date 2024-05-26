@@ -383,8 +383,12 @@ const getTotalStatics = catchAsync(async (req: Request, res: Response) => {
   });
 });
 const getExpenses = catchAsync(async (req: Request, res: Response) => {
+  const now = dayjs();
+  const month = now.month() + 1;
+  const year = now.year();
+  const date = req?.query?.date ? req?.query?.date : `${year}-${month}`;
   const page = req.query.page ? Number(req.query.page) : 1;
-  const result = await adminService.getExpenses(page);
+  const result = await adminService.getExpenses(page, date);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,

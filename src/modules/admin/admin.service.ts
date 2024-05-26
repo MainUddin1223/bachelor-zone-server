@@ -6,7 +6,7 @@ import {
   ICreateTeam,
   IListedExpenses,
 } from './admin.interface';
-import { registrationFee, tiffinBoxCost } from './admin.constant';
+import { lunchCost, registrationFee, tiffinBoxCost } from './admin.constant';
 import { generateRandomID } from '../../utils/helpers/helpers';
 import dayjs from 'dayjs';
 import { pagination } from '../../utils/helpers/pagination';
@@ -852,6 +852,39 @@ const getTotalStatics = async () => {
 
   const startDate = todayStartOfDay.format('YYYY-MM-DD[T]00:00:00.000Z');
   const endDate = todayStartOfDay.format('YYYY-MM-DD[T]23:59:59.000Z');
+  const startOfMonth = dayjs().startOf('month').toISOString();
+  const endOfMonth = dayjs().endOf('month').toISOString();
+
+  const totalEarning = await prisma.order.count({
+    where: {
+      status: 'received',
+    },
+  });
+  const totalExpenses = await prisma.expenses.aggregate({
+    _sum: {
+      amount: true,
+    },
+  });
+  const totalExpensesOfTheMonth = await prisma.expenses.aggregate({
+    _sum: {
+      amount: true,
+    },
+    where: {
+      date: {
+        gte: startOfMonth,
+        lte: endOfMonth,
+      },
+    },
+  });
+  const totalEarningOfTheMonth = await prisma.order.count({
+    where: {
+      status: 'received',
+      delivery_date: {
+        gte: startOfMonth,
+        lte: endOfMonth,
+      },
+    },
+  });
 
   //Todays total order , delivered,canceled,pending
   const getOrders = await prisma.order.findMany({
@@ -983,34 +1016,56 @@ const getTotalStatics = async () => {
       },
     },
   });
+  const boxAndServiceFee = serviceAndBoxFee?._sum?.amount || 0;
   return {
     result: {
       ...orderData,
       totalCompletedOrderSoFar,
-      costOfTheDay: costOfTheDay?._sum?.amount ? costOfTheDay?._sum?.amount : 0,
-      depositOfTheDay: depositOfTheDay?._sum?.amount
-        ? depositOfTheDay?._sum?.amount
-        : 0,
+      costOfTheDay: costOfTheDay?._sum?.amount || 0,
+      depositOfTheDay: depositOfTheDay?._sum?.amount || 0,
       totalUsers,
       totalTeam: teamData?._count?.id,
-      totalDueBoxes: teamData?._sum?.due_boxes ? teamData?._sum?.due_boxes : 0,
-      totalRemainingBalance: totalRemainingBalance?._sum?.Balance
-        ? totalRemainingBalance?._sum?.Balance
-        : 0,
-      totalTransaction: totalTransaction?._sum?.amount,
-      serviceAndBoxFee: serviceAndBoxFee?._sum?.amount
-        ? serviceAndBoxFee?._sum?.amount
-        : 0,
+      totalDueBoxes: teamData?._sum?.due_boxes || 0,
+      totalRemainingBalance: totalRemainingBalance?._sum?.Balance || 0,
+      totalTransaction: totalTransaction?._sum?.amount || 0,
+      serviceAndBoxFee: boxAndServiceFee,
+      totalExpensesOfTheMonth: totalExpensesOfTheMonth?._sum?.amount || 0,
+      totalEarningOfTheMonth: totalEarningOfTheMonth * lunchCost || 0,
+      totalExpenses: totalExpenses?._sum?.amount || 0,
+      totalEarning: totalEarning * lunchCost + boxAndServiceFee,
     },
   };
 };
-const getExpenses = async (pageNumber: number) => {
+const getExpenses = async (pageNumber: number, date: any) => {
   const meta = pagination({ page: pageNumber, limit: 15 });
   const { skip, take, orderBy, page } = meta;
+  const startOfMonth = dayjs(date).startOf('month').toISOString();
+  const endOfMonth = dayjs().endOf('month').toISOString();
 
-  const totalExpenses = await prisma.expenses.aggregate({
+  const totalExpensesOfTheMonth = await prisma.expenses.aggregate({
     _sum: {
       amount: true,
+    },
+    where: {
+      date: {
+        gte: startOfMonth,
+        lte: endOfMonth,
+      },
+    },
+  });
+  const totalEarningOfTheMonth = await prisma.transaction.aggregate({
+    _sum: {
+      amount: true,
+    },
+    where: {
+      date: {
+        gte: startOfMonth,
+        lte: endOfMonth,
+      },
+      transaction_type: 'deposit',
+      description: {
+        notIn: ['Service fee', 'Tiffin box cost'],
+      },
     },
   });
   const expenses = await prisma.expenses.findMany({
@@ -1028,9 +1083,8 @@ const getExpenses = async (pageNumber: number) => {
   return {
     result: {
       expenses,
-      totalExpenses: totalExpenses?._sum?.amount
-        ? totalExpenses?._sum?.amount
-        : 0,
+      totalExpensesOfTheMonth: totalExpensesOfTheMonth?._sum?.amount || 0,
+      totalEarningOfTheMonth: totalEarningOfTheMonth?._sum?.amount || 0,
     },
     meta: { page: page, size: take, total: totalCount, totalPage },
   };
