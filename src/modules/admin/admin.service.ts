@@ -228,26 +228,12 @@ const claimUser = async (data: IClaimUser) => {
           },
           data: {
             is_claimed: true,
-            Balance: Number(isClaimed.Balance) + data.balance,
+            Balance: calculateBalance,
           },
         });
         if (claimUser.is_claimed) {
-          await tx.transaction.create({
-            data: {
-              transaction_type,
-              amount: data.balance,
-              description: 'Balance recharge',
-              user_id: data.id,
-            },
-          });
-
-          await tx.team.update({
-            where: {
-              id: data.teamId,
-            },
-            data: {
-              member: includeMember,
-            },
+          await tx.transaction.createMany({
+            data: transactions,
           });
         }
         return {

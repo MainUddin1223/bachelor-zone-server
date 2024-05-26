@@ -101,6 +101,7 @@ const getUserById = async (id: number) => {
     where: {
       id,
       is_deleted: false,
+      role: 'user',
     },
     select: {
       name: true,
