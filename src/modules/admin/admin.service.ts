@@ -1005,7 +1005,7 @@ const getTotalStatics = async () => {
   };
 };
 const getExpenses = async (pageNumber: number) => {
-  const meta = pagination({ page: pageNumber, limit: 5 });
+  const meta = pagination({ page: pageNumber, limit: 15 });
   const { skip, take, orderBy, page } = meta;
 
   const totalExpenses = await prisma.expenses.aggregate({
