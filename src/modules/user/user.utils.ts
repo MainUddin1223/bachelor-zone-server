@@ -2,8 +2,13 @@ import { PrismaClient } from '@prisma/client';
 import dayjs from 'dayjs';
 import ApiError from '../../utils/errorHandlers/apiError';
 import { mealCost } from './user.constant';
+import utc from 'dayjs/plugin/utc';
+import timezone from 'dayjs/plugin/timezone';
 import { errorMessage as errorMsg } from './user.constant';
 const prisma = new PrismaClient();
+
+dayjs.extend(utc);
+dayjs.extend(timezone);
 
 export const isValidOrderDate = (date: string): boolean => {
   const todayDate = dayjs(new Date()).startOf('hour');
@@ -72,7 +77,7 @@ export const updateOrderStatus = async (
   const userInfo = await getUserInfo(userId);
   let Balance: number;
   if (status === 'canceled') {
-    Balance = userInfo.Balance + mealCost;
+    Balance = userInfo.Balance + Number(getOrder?.price);
   } else {
     Balance = userInfo.Balance - mealCost;
   }
@@ -87,11 +92,14 @@ export const updateOrderStatus = async (
   if (formatTodayDate > deliveryDate) {
     throw new ApiError(409, errorMsg.orderDatePassed);
   }
-  const formatCancelDate = todayDate.format('YYYY-MM-DD[T]hh:mm:ss.sssZ');
+  const formatCancelDate = dayjs(todayDate)
+    .tz('Asia/Dhaka')
+    .format('YYYY-MM-DD[T]HH:mm:ss.sssZ');
   const cancelDate = formatCancelDate.split('T')[0];
   const formatDeliveryDate = deliveryDate.split('T')[0];
   const formatDate = todayDate.format('YYYY-MM-DD[T]06:30:00.000Z');
-
+  // console.log(formatDeliveryDate, cancelDate, formatCancelDate, formatDate)
+  // console.log(formatDeliveryDate == cancelDate, formatCancelDate > formatDate)
   if (cancelDate == formatDeliveryDate && formatCancelDate > formatDate) {
     //check the time if the order is for today
     throw new ApiError(409, errorMsg.todayOrderDatePassed);

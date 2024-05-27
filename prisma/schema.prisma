@@ -84,6 +84,7 @@ model Order {
   id            Int         @id @default(autoincrement())
   user_id       Int
   team_id       Int
+  price         Int         @default(89)
   status        OrderStatus @default(pending)
   delivery_date DateTime
   createdAt     DateTime    @default(now())
@@ -123,6 +124,7 @@ model Expenses {
 enum Role {
   admin
   user
+  supplier
 }
 
 enum OrderStatus {

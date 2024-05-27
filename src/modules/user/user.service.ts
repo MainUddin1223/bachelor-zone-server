@@ -47,6 +47,7 @@ const placeOrder = async (date: string, userId: number) => {
         user_id: userId,
         team_id: userInfo.team_id,
         delivery_date,
+        price: mealCost,
       },
     });
     if (!createOrder.id) {
