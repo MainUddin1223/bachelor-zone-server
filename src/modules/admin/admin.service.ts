@@ -7,6 +7,7 @@ import { IFilterOption } from '../../utils/helpers/interface';
 import { adminUserService } from './admin.user.service';
 import { adminTeamService } from './admin.team.service';
 import { adminTransactionService } from './admin.transaction.service';
+import { formatLocalTime } from '../../utils/helpers/timeZone';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
 
@@ -89,11 +90,13 @@ const getOrders = async (
       queryOption[field] = value;
     });
   }
+  if (status) {
+    queryOption['status'] = status;
+  }
 
   const orders = await prisma.order.findMany({
     where: {
       ...queryOption,
-      status,
       AND: [
         {
           delivery_date: {
@@ -193,14 +196,25 @@ const getOrders = async (
 };
 
 const deliverOrder = async (id: number) => {
-  const todayDate = dayjs(new Date()).startOf('hour');
-  const formatTodayDate = todayDate.format('YYYY-MM-DD');
+  const todayDate = formatLocalTime(new Date());
+  const isValidOrder = await prisma.order.findFirst({
+    where: {
+      team_id: id,
+      status: 'pending',
+      delivery_date: {
+        equals: todayDate.formatDefaultDateAndTime,
+      },
+    },
+  });
+  if (!isValidOrder) {
+    throw new ApiError(400, 'Invalid order');
+  }
   const result = await prisma.order.updateMany({
     where: {
       team_id: id,
       status: 'pending',
       delivery_date: {
-        equals: `${formatTodayDate}T00:00:00.000Z`,
+        equals: todayDate.formatDefaultDateAndTime,
       },
     },
     data: {

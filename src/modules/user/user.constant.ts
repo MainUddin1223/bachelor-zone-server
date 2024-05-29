@@ -22,4 +22,5 @@ export const successMessage = {
   orderHistory: 'Order history retrieved successfully',
   userInfo: 'User info retrieved successfully',
   transactions: 'Transaction history retrieved successfully',
+  teamDetails: 'Team details retrieved successfully',
 };

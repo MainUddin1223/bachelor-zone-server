@@ -93,6 +93,16 @@ const getTransaction = catchAsync(async (req: Request, res: Response) => {
     data: result,
   });
 });
+const getTeamDetails = catchAsync(async (req: Request, res: Response) => {
+  const userId = Number(req.user?.id);
+  const result = await userService.getTeamDetails(userId);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: successMessage.teamDetails,
+    data: result,
+  });
+});
 
 export const userController = {
   placeOrder,
@@ -102,4 +112,5 @@ export const userController = {
   getOrderHistory,
   getUserInfo,
   getTransaction,
+  getTeamDetails,
 };

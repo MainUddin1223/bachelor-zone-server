@@ -10,6 +10,7 @@ import {
 } from './user.utils';
 import { pagination } from '../../utils/helpers/pagination';
 import { formatLocalTime } from '../../utils/helpers/timeZone';
+import { TeamOrderData } from '../admin/admin.interface';
 
 const prisma = new PrismaClient();
 
@@ -263,6 +264,99 @@ const getTransaction = async (id: number, pageNumber: number) => {
   };
 };
 
+const getTeamDetails = async (id: number) => {
+  const getTeamDetails = await prisma.team.findFirst({
+    where: {
+      leader_id: id,
+    },
+    select: {
+      id: true,
+      name: true,
+      member: true,
+      leader: {
+        select: {
+          name: true,
+          phone: true,
+        },
+      },
+      address: {
+        select: {
+          address: true,
+        },
+      },
+    },
+  });
+  if (getTeamDetails) {
+    const members = await prisma.userInfo.findMany({
+      where: {
+        team_id: getTeamDetails.id,
+      },
+      select: {
+        user: {
+          select: {
+            name: true,
+            phone: true,
+          },
+        },
+      },
+    });
+    const formatDate = formatLocalTime(Date.now());
+    const getOrders = await prisma.order.findMany({
+      orderBy: {
+        delivery_date: 'asc',
+      },
+      where: {
+        status: 'pending',
+        delivery_date: {
+          gte: formatDate.formatDefaultDateAndTime,
+        },
+      },
+      include: {
+        user: {
+          select: {
+            name: true,
+            phone: true,
+          },
+        },
+      },
+    });
+    const aggregatedData: Record<string, TeamOrderData> = {};
+    getOrders.forEach(item => {
+      const { status, delivery_date } = item;
+      const formatDate = formatLocalTime(delivery_date);
+
+      // Check if the team_id exists in the aggregatedData
+      if (!aggregatedData[formatDate.localDate]) {
+        // If not, initialize an object for the team_id
+        aggregatedData[formatDate.localDate] = {
+          delivery_date: formatDate.localDate,
+          status,
+          order_count: 1,
+          orderList: [
+            {
+              user_name: item.user.name,
+              user_phone: item.user.phone,
+            },
+          ], // Initialize order count to 1
+        };
+      } else {
+        // If it exists, increment the order count
+        aggregatedData[formatDate.localDate].order_count++;
+        aggregatedData[formatDate.localDate].orderList.push({
+          user_name: item.user.name,
+          user_phone: item.user.phone,
+        });
+      }
+    });
+
+    // Convert the aggregatedData object into an array
+    const result = Object.values(aggregatedData);
+    return { teamDetails: getTeamDetails, members, result };
+  } else {
+    throw new ApiError(404, 'Team not found');
+  }
+};
+
 export const userService = {
   placeOrder,
   cancelOrder,
@@ -271,4 +365,5 @@ export const userService = {
   getOrderHistory,
   userInfo,
   getTransaction,
+  getTeamDetails,
 };

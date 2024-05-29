@@ -29,6 +29,12 @@ export interface AggregatedOrder {
   orderList: any[];
   delivery_date: Date;
 }
+export interface TeamOrderData {
+  status: string;
+  order_count: number;
+  orderList: any[];
+  delivery_date: string;
+}
 export interface AggregatedUsers {
   team_id?: number;
   team_name?: string;

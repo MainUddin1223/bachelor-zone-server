@@ -235,7 +235,7 @@ const changeLeader = catchAsync(async (req: Request, res: Response) => {
 
 const getOrders = catchAsync(async (req: Request, res: Response) => {
   const filter = pick(req.query, teamFilters);
-  const status = req?.query?.status ? req?.query?.status : 'pending';
+  const status = req?.query?.status;
   const orderDate = req?.query?.date ? req?.query?.date : dayjs(Date.now());
   const result = await adminService.getOrders(orderDate, filter, status);
   sendResponse(res, {
