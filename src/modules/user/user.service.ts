@@ -8,8 +8,8 @@ import {
   isValidOrderForToday,
   updateOrderStatus,
 } from './user.utils';
-import dayjs from 'dayjs';
 import { pagination } from '../../utils/helpers/pagination';
+import { formatLocalTime } from '../../utils/helpers/timeZone';
 
 const prisma = new PrismaClient();
 
@@ -30,11 +30,10 @@ const placeOrder = async (date: string, userId: number) => {
   if (mealCost > balance) {
     throw new ApiError(403, errorMessage.insufficientBalance);
   }
-  const orderSortOfDate = date.split('T')[0];
-  const delivery_date = `${orderSortOfDate}T00:00:00.000Z`;
+  const formatDate = formatLocalTime(date);
   const isOrderExist = await prisma.order.findFirst({
     where: {
-      delivery_date,
+      delivery_date: `${formatDate.formatDefaultDateAndTime}`,
       user_id: userId,
     },
   });
@@ -46,7 +45,7 @@ const placeOrder = async (date: string, userId: number) => {
       data: {
         user_id: userId,
         team_id: userInfo.team_id,
-        delivery_date,
+        delivery_date: formatDate.formatDefaultDateAndTime,
         price: mealCost,
       },
     });
@@ -64,7 +63,7 @@ const placeOrder = async (date: string, userId: number) => {
     if (!updateBalance.id) {
       throw new ApiError(500, errorMessage.placeOrderFail);
     }
-    return delivery_date;
+    return { delivery_date: formatDate.formatDefaultDateAndTime };
   });
   return placeOrder;
 };
@@ -95,13 +94,12 @@ const updateOrder = async (id: number, userId: number) => {
 };
 
 const getUpcomingOrder = async (id: number) => {
-  const todayDate = dayjs(new Date()).startOf('hour');
-  const formatTodayDate = todayDate.format('YYYY-MM-DD');
+  const todayDate = formatLocalTime(new Date());
   const upcomingOrders = await prisma.order.findMany({
     where: {
       user_id: id,
       delivery_date: {
-        gte: `${formatTodayDate}T00:00:00.000Z`,
+        gte: `${todayDate.formatDefaultDateAndTime}`,
       },
     },
     orderBy: {
@@ -114,34 +112,57 @@ const getUpcomingOrder = async (id: number) => {
 const getOrderHistory = async (id: number, pageNumber: number) => {
   const meta = pagination({ page: pageNumber });
   const { skip, take, page } = meta;
-  const todayDate = dayjs(new Date()).startOf('hour');
-  const formatTodayDate = todayDate.format('YYYY-MM-DD');
+  const todayDate = formatLocalTime(new Date());
   const orderHistory = await prisma.order.findMany({
     skip,
     take,
     where: {
       user_id: id,
       delivery_date: {
-        lt: `${formatTodayDate}T00:00:00.000Z`,
+        lt: todayDate.formatDefaultDateAndTime,
       },
     },
     orderBy: {
       delivery_date: 'desc',
     },
   });
-  const totalCount = await prisma.order.count({
+  const totalOrderHistory = await prisma.order.findMany({
     where: {
       delivery_date: {
-        lt: `${formatTodayDate}T00:00:00.000Z`,
+        lt: todayDate.formatDefaultDateAndTime,
       },
     },
   });
+  const initialOrderData = {
+    totalCount: totalOrderHistory.length,
+    deliveredOrder: 0,
+    notReceived: 0,
+    canceledOrder: 0,
+  };
+
+  const orderData = totalOrderHistory.reduce((acc, order) => {
+    if (order.status === 'pending') {
+      acc.notReceived += 1;
+    } else if (order.status === 'received') {
+      acc.deliveredOrder += 1;
+    } else {
+      acc.canceledOrder += 1;
+    }
+    return acc;
+  }, initialOrderData);
 
   const totalPage =
-    totalCount > take ? Math.ceil(totalCount / Number(take)) : 1;
+    initialOrderData.totalCount > take
+      ? Math.ceil(initialOrderData.totalCount / Number(take))
+      : 1;
   return {
-    data: orderHistory,
-    meta: { size: take, total: totalCount, totalPage, currentPage: page },
+    data: { orderHistory, orderData },
+    meta: {
+      size: take,
+      total: initialOrderData.totalCount,
+      totalPage,
+      currentPage: page,
+    },
   };
 };
 
@@ -185,17 +206,18 @@ const userInfo = async (id: number) => {
     },
   });
   if (getTeamInfo) {
-    const todayDate = dayjs(new Date()).startOf('hour');
-    const formatTodayDate = todayDate.format('YYYY-MM-DD');
-    const getTodayOrderCount = await prisma.order.count({
+    const todayDate = formatLocalTime(new Date());
+    const getTodayOrder = await prisma.order.findMany({
       where: {
         team_id: getTeamInfo.id,
-        delivery_date: {
-          equals: `${formatTodayDate}T00:00:00.000Z`,
+        status: {
+          not: 'canceled',
         },
+        delivery_date: todayDate.formatDefaultDateAndTime,
       },
     });
-    teamInfo = { ...getTeamInfo, order: getTodayOrderCount };
+    const status = getTodayOrder.find(order => order.status === 'pending');
+    teamInfo = { ...getTeamInfo, order: getTodayOrder.length, status };
   }
   const formatInfo = {
     balance: result?.Balance,

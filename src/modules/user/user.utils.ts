@@ -5,28 +5,28 @@ import { mealCost } from './user.constant';
 import utc from 'dayjs/plugin/utc';
 import timezone from 'dayjs/plugin/timezone';
 import { errorMessage as errorMsg } from './user.constant';
+import { formatLocalTime } from '../../utils/helpers/timeZone';
 const prisma = new PrismaClient();
 
 dayjs.extend(utc);
 dayjs.extend(timezone);
 
 export const isValidOrderDate = (date: string): boolean => {
-  const todayDate = dayjs(new Date()).startOf('hour');
-  const deliveryDate = dayjs(date).startOf('hour');
-  if (todayDate > deliveryDate) {
+  const todayDate = formatLocalTime(new Date());
+  const deliveryDate = formatLocalTime(date);
+  if (todayDate.localDate > deliveryDate.localDate) {
     return false;
   }
   return true;
 };
 
 export const isValidOrderForToday = (date: string): boolean => {
-  const todayDate = dayjs(new Date()).startOf('hour');
-  const deliveryDate = todayDate
-    .format('YYYY-MM-DD[T]00:00:00.000Z')
-    .split('T')[0];
+  const todayDate = formatLocalTime(new Date(), 'YYYY-MM-DD[T]06:30:00.000Z');
   const formatDeliveryDate = date.split('T')[0];
-  const formatDate = todayDate.format('YYYY-MM-DD[T]06:30:00.000Z');
-  if (deliveryDate == formatDeliveryDate && date > formatDate) {
+  if (
+    todayDate.localDate == formatDeliveryDate &&
+    date > todayDate.formatWithHourDateAndTime
+  ) {
     return false;
   }
   return true;
@@ -84,22 +84,19 @@ export const updateOrderStatus = async (
   if (!getOrder) {
     throw new ApiError(404, errorMsg.orderNotFound);
   }
-  const deliveryDate = dayjs(getOrder.delivery_date).format(
-    'YYYY-MM-DD[T]00:00.000Z'
+  const deliveryDate = formatLocalTime(getOrder.delivery_date);
+  const getDateAndTime = formatLocalTime(
+    new Date(),
+    'YYYY-MM-DD[T]06:30:00.000Z'
   );
-  const todayDate = dayjs(new Date()).startOf('hour');
-  const formatTodayDate = todayDate.format('YYYY-MM-DD[T]00:00.000Z');
-  if (formatTodayDate > deliveryDate) {
+  const formatTodayDate = getDateAndTime.formatDefaultDateAndTime;
+  if (formatTodayDate > deliveryDate.formatDefaultDateAndTime) {
     throw new ApiError(409, errorMsg.orderDatePassed);
   }
-  const formatCancelDate = dayjs(todayDate)
-    .tz('Asia/Dhaka')
-    .format('YYYY-MM-DD[T]HH:mm:ss.sssZ');
-  const cancelDate = formatCancelDate.split('T')[0];
-  const formatDeliveryDate = deliveryDate.split('T')[0];
-  const formatDate = todayDate.format('YYYY-MM-DD[T]06:30:00.000Z');
-  // console.log(formatDeliveryDate, cancelDate, formatCancelDate, formatDate)
-  // console.log(formatDeliveryDate == cancelDate, formatCancelDate > formatDate)
+  const formatCancelDate = getDateAndTime.localTimeAndDate;
+  const cancelDate = getDateAndTime.localDate;
+  const formatDeliveryDate = deliveryDate.localDate;
+  const formatDate = getDateAndTime.formatWithHourDateAndTime;
   if (cancelDate == formatDeliveryDate && formatCancelDate > formatDate) {
     //check the time if the order is for today
     throw new ApiError(409, errorMsg.todayOrderDatePassed);
