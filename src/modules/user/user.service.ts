@@ -168,6 +168,7 @@ const getOrderHistory = async (id: number, pageNumber: number) => {
 };
 
 const userInfo = async (id: number) => {
+  const todayDate = formatLocalTime(new Date());
   const result = await prisma.userInfo.findFirst({
     where: {
       user_id: id,
@@ -180,9 +181,12 @@ const userInfo = async (id: number) => {
             select: {
               name: true,
               phone: true,
+              id: true,
             },
           },
+          member: true,
           name: true,
+          id: true,
         },
       },
       id: true,
@@ -193,8 +197,37 @@ const userInfo = async (id: number) => {
         select: {
           phone: true,
           name: true,
+          Order: {
+            where: {
+              delivery_date: todayDate.formatDefaultDateAndTime,
+            },
+            select: {
+              status: true,
+              id: true,
+            },
+          },
         },
       },
+    },
+  });
+  const memberInfo = await prisma.userInfo.findMany({
+    where: {
+      team_id: result?.team_member?.id,
+    },
+    select: {
+      user: {
+        select: {
+          name: true,
+          phone: true,
+        },
+      },
+    },
+  });
+
+  const ordersOfTheDay = await prisma.order.count({
+    where: {
+      delivery_date: todayDate.formatDefaultDateAndTime,
+      status: 'pending',
     },
   });
   if (!result?.id) {
@@ -207,7 +240,6 @@ const userInfo = async (id: number) => {
     },
   });
   if (getTeamInfo) {
-    const todayDate = formatLocalTime(new Date());
     const getTodayOrder = await prisma.order.findMany({
       where: {
         team_id: getTeamInfo.id,
@@ -225,9 +257,13 @@ const userInfo = async (id: number) => {
     address: result?.address.address,
     team: result?.team_member.name,
     teamLeader: result?.team_member.leader.name,
+    ordersOfTheDay,
+    memberInfo,
+    totalMembers: result?.team_member?.member,
     leaderPhone: result?.team_member.leader.phone,
     name: result.user.name,
     phone: result.user.phone,
+    order: result.user.Order,
     virtual_id: result?.virtual_id,
     is_claimed: result?.is_claimed,
     teamInfo,
