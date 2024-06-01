@@ -41,7 +41,7 @@ export const isValidOrderForToday = (date: string): boolean => {
   const formatDate = getDateAndTime.formatWithHourDateAndTime;
   if (todayDate == deliveryDate && formatOrderDate > formatDate) {
     //check the time if the order is for today
-    return true;
+    return false;
   }
   return true;
 };

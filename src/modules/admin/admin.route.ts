@@ -1,6 +1,6 @@
 import express from 'express';
 import { verifyAdmin } from '../../utils/jwtHelpers/verifyAuth';
-import { adminController } from './admin.controller';
+import { adminController } from './controllers/admin.controller';
 
 const router = express.Router();
 router.route('/statics').get(verifyAdmin, adminController.getTotalStatics);
@@ -31,5 +31,17 @@ router.route('/users/:id').get(verifyAdmin, adminController.getUserById);
 router
   .route('/unclaimed-users/:id')
   .get(verifyAdmin, adminController.getUnclaimUserById);
+
+// supplier route
+
+router
+  .route('/supplier')
+  .post(verifyAdmin, adminController.createSupplier)
+  .get(verifyAdmin, adminController.getSuppliers);
+router
+  .route('/supplier/:id')
+  .patch(verifyAdmin, adminController.updateSupplier)
+  .post(verifyAdmin, adminController.getPaymentFromSupplier)
+  .get(verifyAdmin, adminController.getSupplierById);
 
 export default { adminRouter: router };

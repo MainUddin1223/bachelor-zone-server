@@ -1,19 +1,19 @@
 import { PrismaClient } from '@prisma/client';
-import ApiError from '../../utils/errorHandlers/apiError';
-import { AggregatedOrder } from './admin.interface';
-import { lunchCost } from './admin.constant';
+import ApiError from '../../../utils/errorHandlers/apiError';
+import { AggregatedOrder } from '../admin.interface';
+import { lunchCost } from '../admin.constant';
 import dayjs from 'dayjs';
-import { IFilterOption } from '../../utils/helpers/interface';
+import { IFilterOption } from '../../../utils/helpers/interface';
 import { adminUserService } from './admin.user.service';
 import { adminTeamService } from './admin.team.service';
 import { adminTransactionService } from './admin.transaction.service';
-import { formatLocalTime } from '../../utils/helpers/timeZone';
+import { adminSupplierService } from './admin.supplier.service';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
 
 const prisma = new PrismaClient();
 
-const addAddress = async (address: string) => {
+const addAddress = async (address: string, supplierId: number) => {
   const isAddressExist = await prisma.address.findFirst({
     where: {
       address: {
@@ -26,7 +26,7 @@ const addAddress = async (address: string) => {
     throw new ApiError(403, 'Address already exist');
   }
   const result = await prisma.address.create({
-    data: { address },
+    data: { address, supplier_id: supplierId },
   });
   return result;
 };
@@ -193,48 +193,6 @@ const getOrders = async (
   const result = Object.values(aggregatedData);
 
   return { result, orders };
-};
-
-const deliverOrder = async (id: number) => {
-  const todayDate = formatLocalTime(new Date());
-  const isValidOrder = await prisma.order.findFirst({
-    where: {
-      team_id: id,
-      status: 'pending',
-      delivery_date: {
-        equals: todayDate.formatDefaultDateAndTime,
-      },
-    },
-  });
-  if (!isValidOrder) {
-    throw new ApiError(400, 'Invalid order');
-  }
-  const result = await prisma.order.updateMany({
-    where: {
-      team_id: id,
-      status: 'pending',
-      delivery_date: {
-        equals: todayDate.formatDefaultDateAndTime,
-      },
-    },
-    data: {
-      status: 'received',
-    },
-  });
-  return result;
-};
-
-const updateDueBoxes = async (id: number, amount: number) => {
-  const result = await prisma.team.update({
-    where: {
-      id,
-      is_deleted: false,
-    },
-    data: {
-      due_boxes: amount,
-    },
-  });
-  return result;
 };
 
 const getTotalStatics = async () => {
@@ -432,10 +390,9 @@ export const adminService = {
   ...adminUserService,
   ...adminTeamService,
   ...adminTransactionService,
-  deliverOrder,
+  ...adminSupplierService,
   addAddress,
   updateAddress,
   getOrders,
-  updateDueBoxes,
   getTotalStatics,
 };

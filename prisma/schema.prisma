@@ -8,18 +8,19 @@ datasource db {
 }
 
 model Auth {
-  id          Int           @id @default(autoincrement())
-  phone       String        @unique
-  password    String
-  name        String
-  role        Role          @default(user)
-  is_deleted  Boolean       @default(false)
-  teams       Team[]
-  Order       Order[]
-  Transaction Transaction[]
-  UserInfo    UserInfo[]
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  id           Int            @id @default(autoincrement())
+  phone        String         @unique
+  password     String
+  name         String
+  role         Role           @default(user)
+  is_deleted   Boolean        @default(false)
+  teams        Team[]
+  Order        Order[]
+  Transaction  Transaction[]
+  UserInfo     UserInfo[]
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  supplierInfo SupplierInfo[]
 
   @@map("auth")
 }
@@ -44,20 +45,30 @@ model UserInfo {
   @@map("userInfo")
 }
 
-model AdminInfo {
-  id        Int      @id @default(autoincrement())
-  name      String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model SupplierInfo {
+  id          Int           @id @default(autoincrement())
+  user_id     Int
+  user        Auth          @relation(fields: [user_id], references: [id])
+  contact_no  String
+  name        String?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  address     Address[]
+  Order       Order[]
+  Transaction Transaction[]
+
+  @@map("supplierInfo")
 }
 
 model Address {
-  id        Int        @id @default(autoincrement())
-  address   String
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  Team      Team[]
-  UserInfo  UserInfo[]
+  id          Int          @id @default(autoincrement())
+  address     String
+  supplier_id Int
+  supplier    SupplierInfo @relation(fields: [supplier_id], references: [id])
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  Team        Team[]
+  UserInfo    UserInfo[]
 
   @@map("address")
 }
@@ -81,16 +92,19 @@ model Team {
 }
 
 model Order {
-  id            Int         @id @default(autoincrement())
+  id            Int          @id @default(autoincrement())
   user_id       Int
   team_id       Int
-  price         Int         @default(89)
-  status        OrderStatus @default(pending)
+  supplier_id   Int
+  price         Int          @default(89)
+  status        OrderStatus  @default(pending)
+  pickup_status PickupStatus @default(notAbailable)
   delivery_date DateTime
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  team          Team        @relation(fields: [team_id], references: [id])
-  user          Auth        @relation(fields: [user_id], references: [id])
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  supplier      SupplierInfo @relation(fields: [supplier_id], references: [id])
+  team          Team         @relation(fields: [team_id], references: [id])
+  user          Auth         @relation(fields: [user_id], references: [id])
 
   @@map("orders")
 }
@@ -98,11 +112,14 @@ model Order {
 model Transaction {
   id               Int             @id @default(autoincrement())
   user_id          Int
-  user             Auth            @relation(fields: [user_id], references: [id])
+  receiver_id      Int
   amount           Int
   description      String
   date             DateTime        @default(now())
+  status           PaymentStatus   @default(paid)
   transaction_type TransactionType
+  user             Auth            @relation(fields: [user_id], references: [id])
+  receiver         SupplierInfo    @relation(fields: [receiver_id], references: [id])
   createdAt        DateTime        @default(now())
   updatedAt        DateTime        @updatedAt
 
@@ -136,4 +153,15 @@ enum OrderStatus {
 enum TransactionType {
   deposit
   refund
+}
+
+enum PaymentStatus {
+  paid
+  pending
+}
+
+enum PickupStatus {
+  abailable
+  notAbailable
+  received
 }

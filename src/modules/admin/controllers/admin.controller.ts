@@ -1,0 +1,101 @@
+import { Request, Response } from 'express';
+import catchAsync from '../../../utils/errorHandlers/catchAsync';
+import { addressSchema, updateAddressSchema } from '../admin.validator';
+import sendResponse from '../../../utils/responseHandler/sendResponse';
+import { StatusCodes } from 'http-status-codes';
+import { adminService } from '../services/admin.service';
+import dayjs from 'dayjs';
+import { teamFilters } from '../admin.constant';
+import pick from '../../../utils/helpers/pick';
+import { supplierController } from './admin.supplier.controller';
+import { adminUserController } from './admin.user.controller';
+import { adminTeamController } from './admin.team.controller';
+import { transactionController } from './admin.transaction.controller';
+
+const addAddress = catchAsync(async (req: Request, res: Response) => {
+  const { error } = addressSchema.validate(req.body);
+
+  if (error) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: error.details[0]?.message,
+      data: error.details,
+    });
+  } else {
+    const result = await adminService.addAddress(
+      req.body.address,
+      req.body.supplierId
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Category added successfully',
+      data: result,
+    });
+  }
+});
+
+const updateAddress = catchAsync(async (req: Request, res: Response) => {
+  const { error } = updateAddressSchema.validate(req.body);
+
+  if (error) {
+    sendResponse(res, {
+      statusCode: StatusCodes.NOT_ACCEPTABLE,
+      success: false,
+      message: error.details[0]?.message,
+      data: error.details,
+    });
+  } else {
+    const result = await adminService.updateAddress(
+      req.body.id,
+      req.body.address
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Category added successfully',
+      data: result,
+    });
+  }
+});
+
+const getOrders = catchAsync(async (req: Request, res: Response) => {
+  const filter = pick(req.query, teamFilters);
+  const status = req?.query?.status;
+  const orderDate = req?.query?.date ? req?.query?.date : dayjs(Date.now());
+  const result = await adminService.getOrders(orderDate, filter, status);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Orders retrieved successfully',
+    data: result,
+  });
+});
+
+const getTotalStatics = catchAsync(async (req: Request, res: Response) => {
+  const result = await adminService.getTotalStatics();
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Data retrieved successfully',
+    data: result,
+  });
+});
+
+// supplier
+
+export const adminController = {
+  addAddress,
+  updateAddress,
+  getOrders,
+  getTotalStatics,
+  // Users
+  ...adminUserController,
+  //supplier
+  ...supplierController,
+  //team
+  ...adminTeamController,
+  //transaction
+  ...transactionController,
+};

@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from 'express';
 import config from '../config';
 import { PrismaClient } from '@prisma/client';
 import { jwtToken } from './jwtToken';
+import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
 
@@ -27,8 +28,16 @@ const verifyAuthWithRole = (allowedRoles: string[]) => {
           id: decoded.id,
         },
       });
+      const isPasswordMatched = await bcrypt.compare(
+        decoded.password,
+        isExist?.password as string
+      );
 
-      if (!isExist || !allowedRoles.includes(isExist?.role)) {
+      if (
+        !isExist ||
+        !isPasswordMatched ||
+        !allowedRoles.includes(isExist?.role)
+      ) {
         return res.status(401).json({ message: 'Unauthorized' });
       }
       req.user = {
@@ -76,7 +85,7 @@ const verifyAuth = async (req: Request, res: Response, next: NextFunction) => {
 };
 
 const verifyAdmin = verifyAuthWithRole(['admin']);
-const verifyPerformer = verifyAuthWithRole(['performer']);
+const verifySupplier = verifyAuthWithRole(['supplier']);
 const verifyUser = verifyAuthWithRole(['user']);
 
-export { verifyAdmin, verifyPerformer, verifyAuth, verifyUser };
+export { verifyAdmin, verifySupplier, verifyAuth, verifyUser };

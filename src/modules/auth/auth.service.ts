@@ -41,6 +41,7 @@ const signUp = async (payload: ISignUpPayload) => {
     role: result.role,
     id: result.id,
     is_claimed: false,
+    secretCode: result.password,
   };
   const accessToken = await jwtToken.createToken(
     accessData,
@@ -100,6 +101,7 @@ const login = async (payload: ILoginPayload) => {
   const accessData = {
     role: isUserExist.role,
     id: isUserExist.id,
+    secretCode: isUserExist.password,
     is_claimed,
     is_in_team,
   };
@@ -204,9 +206,23 @@ const changePassword = async (payload: IChangePasswordPayload) => {
   }
 };
 
+const changePasswordByAdmin = async (id: number, password: string) => {
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  const result = await prisma.auth.update({
+    where: {
+      id,
+    },
+    data: {
+      password: hashedPassword,
+    },
+  });
+  return result;
+};
+
 export const authService = {
   signUp,
   login,
   changePassword,
   adminLogin,
+  changePasswordByAdmin,
 };

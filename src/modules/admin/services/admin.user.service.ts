@@ -1,10 +1,10 @@
 import { PrismaClient, TransactionType } from '@prisma/client';
-import { IFilterOption } from '../../utils/helpers/interface';
-import { pagination } from '../../utils/helpers/pagination';
-import ApiError from '../../utils/errorHandlers/apiError';
-import { IClaimUser } from './admin.interface';
-import { registrationFee, tiffinBoxCost } from './admin.constant';
-import { generateRandomID } from '../../utils/helpers/helpers';
+import { IClaimUser } from '../admin.interface';
+import ApiError from '../../../utils/errorHandlers/apiError';
+import { registrationFee, tiffinBoxCost } from '../admin.constant';
+import { generateRandomID } from '../../../utils/helpers/helpers';
+import { IFilterOption } from '../../../utils/helpers/interface';
+import { pagination } from '../../../utils/helpers/pagination';
 
 const prisma = new PrismaClient();
 
@@ -255,7 +255,7 @@ const getUnclaimedUser = async (id: number) => {
   }
 };
 
-const claimUser = async (data: IClaimUser) => {
+const claimUser = async (data: IClaimUser, receiver_id: number) => {
   const isClaimed = await prisma.userInfo.findFirst({
     where: {
       user_id: data.id,
@@ -292,18 +292,21 @@ const claimUser = async (data: IClaimUser) => {
       amount: tiffinBoxCost,
       description: 'Tiffin box cost',
       user_id: data.id,
+      receiver_id,
     },
     {
       transaction_type,
       amount: registrationFee,
       description: 'Registration fee',
       user_id: data.id,
+      receiver_id,
     },
     {
       transaction_type,
       amount: calculateBalance,
       description: 'Balance recharge',
       user_id: data.id,
+      receiver_id,
     },
   ];
 
@@ -421,45 +424,6 @@ const getUserInfo = async (number: string) => {
   }
 };
 
-const getTeamInfoById = async (id: number) => {
-  const userInfo = await prisma.userInfo.findMany({
-    where: {
-      team_id: id,
-      is_claimed: true,
-      user: {
-        is_deleted: false,
-      },
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-        },
-      },
-    },
-  });
-
-  const result = await prisma.team.findUnique({
-    where: {
-      id,
-      is_deleted: false,
-    },
-    include: {
-      address: true,
-      leader: {
-        select: {
-          id: true,
-          name: true,
-          phone: true,
-        },
-      },
-    },
-  });
-  return { ...result, userInfo };
-};
-
 const deleteUser = async (id: number) => {
   const getUser = await prisma.auth.findFirst({
     where: {
@@ -482,12 +446,12 @@ const deleteUser = async (id: number) => {
     return result;
   }
 };
+
 export const adminUserService = {
   getUsers,
   getUserById,
   getUnclaimedUser,
   claimUser,
   getUserInfo,
-  getTeamInfoById,
   deleteUser,
 };

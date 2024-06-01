@@ -3,6 +3,7 @@ import catchAsync from '../../utils/errorHandlers/catchAsync';
 import { authService } from './auth.service';
 import sendResponse from '../../utils/responseHandler/sendResponse';
 import {
+  UpdatePasswordSchema,
   changePasswordSchema,
   loginSchema,
   signUpSchema,
@@ -59,6 +60,7 @@ const login = catchAsync(async (req: Request, res: Response) => {
     });
   }
 });
+
 const adminLogin = catchAsync(async (req: Request, res: Response) => {
   const { error } = loginSchema.validate(req.body);
 
@@ -117,9 +119,36 @@ const changePassword = catchAsync(async (req: Request, res: Response) => {
   }
 });
 
+const changePasswordByAdmin = catchAsync(
+  async (req: Request, res: Response) => {
+    const { error } = UpdatePasswordSchema.validate(req.body);
+
+    if (error) {
+      sendResponse(res, {
+        statusCode: StatusCodes.NOT_ACCEPTABLE,
+        success: false,
+        message: error.details[0]?.message,
+        data: error.details,
+      });
+    } else {
+      const result = await authService.changePasswordByAdmin(
+        req.body.id,
+        req.body.password
+      );
+      sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: successMessage.loginSuccess,
+        data: result,
+      });
+    }
+  }
+);
+
 export const authController = {
   signUp,
   login,
   adminLogin,
   changePassword,
+  changePasswordByAdmin,
 };

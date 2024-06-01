@@ -57,3 +57,18 @@ export const changePasswordSchema = Joi.object({
     'any.required': 'Confirm password is required',
   }),
 });
+
+export const UpdatePasswordSchema = Joi.object({
+  id: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid id',
+      'any.required': 'id is required',
+    })
+    .strict(),
+  password: Joi.string().min(6).max(16).required().messages({
+    'string.min': 'Password must be at least 6 characters long',
+    'string.max': 'Password cannot exceed 16 characters',
+    'any.required': 'Password is required',
+  }),
+});
