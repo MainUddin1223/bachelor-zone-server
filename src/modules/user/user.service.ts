@@ -28,6 +28,7 @@ const placeOrder = async (date: string, userId: number) => {
   const userInfo = await getUserInfo(userId);
 
   const balance = userInfo.Balance;
+  const supplier_id = userInfo?.address.supplier_id;
   if (mealCost > balance) {
     throw new ApiError(403, errorMessage.insufficientBalance);
   }
@@ -48,6 +49,7 @@ const placeOrder = async (date: string, userId: number) => {
         team_id: userInfo.team_id,
         delivery_date: formatDate.formatDefaultDateAndTime,
         price: mealCost,
+        supplier_id,
       },
     });
     if (!createOrder.id) {

@@ -81,6 +81,12 @@ const login = async (payload: ILoginPayload) => {
       errorMessages.somethingWrongError
     );
   }
+  if (isUserExist.role !== 'user') {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      errorMessages.somethingWrongError
+    );
+  }
 
   const isPasswordMatched = await bcrypt.compare(
     password,
@@ -116,6 +122,7 @@ const login = async (payload: ILoginPayload) => {
     phone: isUserExist.phone,
   };
 };
+
 const adminLogin = async (payload: ILoginPayload) => {
   const { phone, password } = payload;
   const isUserExist = await prisma.auth.findFirst({
@@ -156,6 +163,7 @@ const adminLogin = async (payload: ILoginPayload) => {
   const accessData = {
     role: isUserExist.role,
     id: isUserExist.id,
+    secretCode: isUserExist.password,
   };
   const accessToken = await jwtToken.createToken(
     accessData,
@@ -167,6 +175,7 @@ const adminLogin = async (payload: ILoginPayload) => {
   };
 };
 
+// bugs
 const changePassword = async (payload: IChangePasswordPayload) => {
   const { oldPassword, newPassword, id } = payload;
   const hashedPassword = bcrypt.hashSync(newPassword, 10);

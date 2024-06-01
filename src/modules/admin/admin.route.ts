@@ -1,9 +1,14 @@
 import express from 'express';
-import { verifyAdmin } from '../../utils/jwtHelpers/verifyAuth';
+import {
+  verifyAdmin,
+  verifyAdminSupplier,
+} from '../../utils/jwtHelpers/verifyAuth';
 import { adminController } from './controllers/admin.controller';
 
 const router = express.Router();
-router.route('/statics').get(verifyAdmin, adminController.getTotalStatics);
+router
+  .route('/statics')
+  .get(verifyAdminSupplier, adminController.getTotalStatics);
 router
   .route('/address')
   .post(verifyAdmin, adminController.addAddress)

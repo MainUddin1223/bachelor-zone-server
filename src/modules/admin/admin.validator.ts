@@ -5,6 +5,13 @@ export const addressSchema = Joi.object({
     'string.pattern.base': 'Invalid Address',
     'any.required': 'Address is required',
   }),
+  supplierId: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid amount',
+      'any.required': 'Amount is required',
+    })
+    .strict(),
 });
 
 export const updateAddressSchema = Joi.object({
@@ -174,11 +181,11 @@ export const getOrderSchema = Joi.object({
 //supplier
 
 export const createSupplierSchema = Joi.object({
-  contactNo: Joi.string().required().messages({
+  name: Joi.string().required().messages({
     'string.pattern.base': 'Invalid contact no',
     'any.required': 'Contact no is required',
   }),
-  name: Joi.string()
+  contact_no: Joi.string()
     .pattern(/^\+8801[0-9]{9}$/)
     .required()
     .messages({

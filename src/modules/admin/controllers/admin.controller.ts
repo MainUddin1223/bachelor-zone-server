@@ -11,6 +11,7 @@ import { supplierController } from './admin.supplier.controller';
 import { adminUserController } from './admin.user.controller';
 import { adminTeamController } from './admin.team.controller';
 import { transactionController } from './admin.transaction.controller';
+import { getSupplierStatics } from '../../supplier/supplier.utils';
 
 const addAddress = catchAsync(async (req: Request, res: Response) => {
   const { error } = addressSchema.validate(req.body);
@@ -30,7 +31,7 @@ const addAddress = catchAsync(async (req: Request, res: Response) => {
     sendResponse(res, {
       statusCode: StatusCodes.OK,
       success: true,
-      message: 'Category added successfully',
+      message: 'Address created successfully',
       data: result,
     });
   }
@@ -74,13 +75,25 @@ const getOrders = catchAsync(async (req: Request, res: Response) => {
 });
 
 const getTotalStatics = catchAsync(async (req: Request, res: Response) => {
-  const result = await adminService.getTotalStatics();
-  sendResponse(res, {
-    statusCode: StatusCodes.OK,
-    success: true,
-    message: 'Data retrieved successfully',
-    data: result,
-  });
+  const id = Number(req?.user?.id);
+  const role = req?.user?.role;
+  if (role == 'admin') {
+    const result = await adminService.getTotalStatics();
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Data retrieved successfully',
+      data: result,
+    });
+  } else {
+    const result = await getSupplierStatics(id);
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Data retrieved successfully',
+      data: result,
+    });
+  }
 });
 
 // supplier

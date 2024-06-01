@@ -216,7 +216,6 @@ const changeLeader = async (leaderId: number, team_id: number) => {
   });
   return { message: `Successfully changed the leader` };
 };
-
 const getTeams = async (pageNumber: number, filterOptions: IFilterOption) => {
   const meta = pagination({ page: pageNumber, limit: 10 });
   const { skip, take, orderBy, page } = meta;
@@ -326,6 +325,7 @@ const getTeamInfoById = async (id: number) => {
   });
   return { ...result, userInfo };
 };
+
 const updateDueBoxes = async (id: number, amount: number) => {
   const result = await prisma.team.update({
     where: {

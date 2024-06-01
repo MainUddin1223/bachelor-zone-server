@@ -1,4 +1,4 @@
-import { PrismaClient, TransactionType } from '@prisma/client';
+import { PaymentStatus, PrismaClient, TransactionType } from '@prisma/client';
 import { IClaimUser } from '../admin.interface';
 import ApiError from '../../../utils/errorHandlers/apiError';
 import { registrationFee, tiffinBoxCost } from '../admin.constant';
@@ -285,6 +285,7 @@ const claimUser = async (data: IClaimUser, receiver_id: number) => {
 
   const calculateBalance = data.balance - (tiffinBoxCost + registrationFee);
   const transaction_type: TransactionType = 'deposit';
+  const status: PaymentStatus = 'paid';
 
   const transactions = [
     {
@@ -292,6 +293,7 @@ const claimUser = async (data: IClaimUser, receiver_id: number) => {
       amount: tiffinBoxCost,
       description: 'Tiffin box cost',
       user_id: data.id,
+      status,
       receiver_id,
     },
     {
@@ -299,6 +301,7 @@ const claimUser = async (data: IClaimUser, receiver_id: number) => {
       amount: registrationFee,
       description: 'Registration fee',
       user_id: data.id,
+      status,
       receiver_id,
     },
     {
@@ -306,6 +309,7 @@ const claimUser = async (data: IClaimUser, receiver_id: number) => {
       amount: calculateBalance,
       description: 'Balance recharge',
       user_id: data.id,
+      status,
       receiver_id,
     },
   ];

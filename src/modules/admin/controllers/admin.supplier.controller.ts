@@ -6,7 +6,6 @@ import { StatusCodes } from 'http-status-codes';
 import { adminService } from '../services/admin.service';
 import pick from '../../../utils/helpers/pick';
 import { teamFilters } from '../admin.constant';
-import { changePasswordSchema } from '../../auth/auth.validator';
 
 const createSupplier = catchAsync(async (req: Request, res: Response) => {
   const { error } = createSupplierSchema.validate(req.body);
@@ -87,29 +86,29 @@ const getPaymentFromSupplier = catchAsync(
     });
   }
 );
-const changeSupplierPassword = catchAsync(
-  async (req: Request, res: Response) => {
-    const { error } = changePasswordSchema.validate(req.body);
+// const changeSupplierPassword = catchAsync(
+//   async (req: Request, res: Response) => {
+//     const { error } = changePasswordSchema.validate(req.body);
 
-    if (error) {
-      sendResponse(res, {
-        statusCode: StatusCodes.NOT_ACCEPTABLE,
-        success: false,
-        message: error.details[0]?.message,
-        data: error.details,
-      });
-    } else {
-      const { id, password } = req.body.data;
-      const result = await adminService.changeSupplierPassword(id, password);
-      sendResponse(res, {
-        statusCode: StatusCodes.OK,
-        success: true,
-        message: 'Password updated successfully',
-        data: result,
-      });
-    }
-  }
-);
+//     if (error) {
+//       sendResponse(res, {
+//         statusCode: StatusCodes.NOT_ACCEPTABLE,
+//         success: false,
+//         message: error.details[0]?.message,
+//         data: error.details,
+//       });
+//     } else {
+//       const { id, password } = req.body.data;
+//       const result = await adminService.changeSupplierPassword(id, password);
+//       sendResponse(res, {
+//         statusCode: StatusCodes.OK,
+//         success: true,
+//         message: 'Password updated successfully',
+//         data: result,
+//       });
+//     }
+//   }
+// );
 
 export const supplierController = {
   createSupplier,
@@ -117,5 +116,4 @@ export const supplierController = {
   getSuppliers,
   getSupplierById,
   getPaymentFromSupplier,
-  changeSupplierPassword,
 };

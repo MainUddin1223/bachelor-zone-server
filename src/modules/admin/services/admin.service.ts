@@ -13,6 +13,8 @@ import { adminSupplierService } from './admin.supplier.service';
 
 const prisma = new PrismaClient();
 
+//create address
+
 const addAddress = async (address: string, supplierId: number) => {
   const isAddressExist = await prisma.address.findFirst({
     where: {
@@ -24,6 +26,15 @@ const addAddress = async (address: string, supplierId: number) => {
   });
   if (isAddressExist) {
     throw new ApiError(403, 'Address already exist');
+  }
+
+  const findSupplier = await prisma.supplierInfo.findUnique({
+    where: {
+      id: supplierId,
+    },
+  });
+  if (!findSupplier) {
+    throw new ApiError(404, 'Supplier not found');
   }
   const result = await prisma.address.create({
     data: { address, supplier_id: supplierId },

@@ -64,9 +64,9 @@ model Address {
   id          Int          @id @default(autoincrement())
   address     String
   supplier_id Int
-  supplier    SupplierInfo @relation(fields: [supplier_id], references: [id])
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
+  supplier    SupplierInfo @relation(fields: [supplier_id], references: [id])
   Team        Team[]
   UserInfo    UserInfo[]
 
@@ -98,7 +98,7 @@ model Order {
   supplier_id   Int
   price         Int          @default(89)
   status        OrderStatus  @default(pending)
-  pickup_status PickupStatus @default(notAbailable)
+  pickup_status PickupStatus @default(disable)
   delivery_date DateTime
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
@@ -161,7 +161,7 @@ enum PaymentStatus {
 }
 
 enum PickupStatus {
-  abailable
-  notAbailable
+  enable
+  disable
   received
 }

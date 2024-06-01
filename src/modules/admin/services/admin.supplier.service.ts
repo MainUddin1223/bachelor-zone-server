@@ -7,11 +7,11 @@ import { formatLocalTime } from '../../../utils/helpers/timeZone';
 const prisma = new PrismaClient();
 
 const createSupplier = async (data: {
-  contactNo: string;
+  contact_no: string;
   id: number;
   name: string;
 }) => {
-  const { contactNo, id, name } = data;
+  const { contact_no, id, name } = data;
   const isSupplierExist = await prisma.supplierInfo.findFirst({
     where: {
       user_id: id,
@@ -24,7 +24,7 @@ const createSupplier = async (data: {
     const res = await tx.supplierInfo.create({
       data: {
         user_id: id,
-        contact_no: contactNo,
+        contact_no,
         name,
       },
     });

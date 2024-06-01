@@ -51,6 +51,9 @@ export const getUserInfo = async (id: number) => {
     where: {
       user_id: id,
     },
+    include: {
+      address: true,
+    },
   });
   if (!userInfo) {
     throw new ApiError(404, errorMsg.unclaimedUser);
