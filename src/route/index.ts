@@ -4,6 +4,7 @@ import config from '../utils/config';
 import authRouter from '../modules/auth/auth.route';
 import adminRouter from '../modules/admin/admin.route';
 import userRouter from '../modules/user/user.route';
+import supplierRouter from '../modules/supplier/supplier.route';
 const router = express.Router();
 
 const defaultRoutes = [
@@ -18,6 +19,10 @@ const defaultRoutes = [
   {
     path: '/user',
     route: userRouter.authRouter,
+  },
+  {
+    path: '/supplier',
+    route: supplierRouter.supplierRouter,
   },
 ];
 defaultRoutes.forEach(route => {

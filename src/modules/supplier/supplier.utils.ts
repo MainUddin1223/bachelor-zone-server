@@ -1,5 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { formatLocalTime } from '../../utils/helpers/timeZone';
+import ApiError from '../../utils/errorHandlers/apiError';
 
 const prisma = new PrismaClient();
 
@@ -86,4 +87,16 @@ export const getSupplierStatics = async (id: number) => {
   }
 
   return result;
+};
+
+export const getSupplierId = async (id: number): Promise<number> => {
+  const result = await prisma.supplierInfo.findFirst({
+    where: {
+      user_id: id,
+    },
+  });
+  if (!result) {
+    throw new ApiError(404, 'Supplier not found');
+  }
+  return Number(result.id);
 };
