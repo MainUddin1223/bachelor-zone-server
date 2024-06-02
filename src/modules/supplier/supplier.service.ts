@@ -5,118 +5,119 @@ import { adminUserService } from '../admin/services/admin.user.service';
 import { pagination } from '../../utils/helpers/pagination';
 import ApiError from '../../utils/errorHandlers/apiError';
 import { getSupplierId } from './supplier.utils';
+import { AggregatedData } from './supplier.interface';
 
 const prisma = new PrismaClient();
 
-const getOrders = async (id: number, filterOptions: IFilterOption) => {
-  const supplier_id: number = await getSupplierId(id);
-  const queryOption: { [key: string]: any } = {};
-  if (Object.keys(filterOptions).length) {
-    const { search, ...restOptions } = filterOptions;
+// const getOrders = async (id: number, filterOptions: IFilterOption) => {
+//   const supplier_id: number = await getSupplierId(id);
+//   const queryOption: { [key: string]: any } = {};
+//   if (Object.keys(filterOptions).length) {
+//     const { search, ...restOptions } = filterOptions;
 
-    if (search) {
-      queryOption['OR'] = [
-        {
-          team: {
-            name: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-        },
-        {
-          team: {
-            address: {
-              address: {
-                contains: search,
-                mode: 'insensitive',
-              },
-            },
-          },
-        },
-      ];
-    }
+//     if (search) {
+//       queryOption['OR'] = [
+//         {
+//           team: {
+//             name: {
+//               contains: search,
+//               mode: 'insensitive',
+//             },
+//           },
+//         },
+//         {
+//           team: {
+//             address: {
+//               address: {
+//                 contains: search,
+//                 mode: 'insensitive',
+//               },
+//             },
+//           },
+//         },
+//       ];
+//     }
 
-    Object.entries(restOptions).forEach(([field, value]) => {
-      queryOption[field] = value;
-    });
-  }
-  const getDate = formatLocalTime(Date.now());
-  const getOrders = await prisma.order.findMany({
-    where: {
-      supplier_id,
-      delivery_date: getDate.formatDefaultDateAndTime,
-      status: 'pending',
-    },
-    select: {
-      id: true,
-      pickup_status: true,
-      user: {
-        select: {
-          name: true,
-          phone: true,
-        },
-      },
-      status: true,
-      delivery_date: true,
-      team: {
-        select: {
-          id: true,
-          name: true,
-          leader: {
-            select: {
-              name: true,
-              phone: true,
-            },
-          },
-          leader_id: true,
-          member: true,
-          address: {
-            select: {
-              id: true,
-              address: true,
-            },
-          },
-        },
-      },
-    },
-  });
+//     Object.entries(restOptions).forEach(([field, value]) => {
+//       queryOption[field] = value;
+//     });
+//   }
+//   const getDate = formatLocalTime(Date.now());
+//   const getOrders = await prisma.order.findMany({
+//     where: {
+//       supplier_id,
+//       delivery_date: getDate.formatDefaultDateAndTime,
+//       status: 'pending',
+//     },
+//     select: {
+//       id: true,
+//       pickup_status: true,
+//       user: {
+//         select: {
+//           name: true,
+//           phone: true,
+//         },
+//       },
+//       status: true,
+//       delivery_date: true,
+//       team: {
+//         select: {
+//           id: true,
+//           name: true,
+//           leader: {
+//             select: {
+//               name: true,
+//               phone: true,
+//             },
+//           },
+//           leader_id: true,
+//           member: true,
+//           address: {
+//             select: {
+//               id: true,
+//               address: true,
+//             },
+//           },
+//         },
+//       },
+//     },
+//   });
 
-  // Process the fetched orders to the desired format
-  const teamOrdersMap: any = {};
+//   // Process the fetched orders to the desired format
+//   const teamOrdersMap: any = {};
 
-  getOrders.forEach(order => {
-    const teamId = order.team.id;
-    if (!teamOrdersMap[teamId]) {
-      teamOrdersMap[teamId] = {
-        teamName: order.team.name,
-        address: order?.team?.address?.address,
-        leader: {
-          name: order.team.leader.name,
-          phone: order.team.leader.phone,
-        },
-        teamId: teamId,
-        totalOrder: 0,
-        orders: [],
-      };
-    }
+//   getOrders.forEach(order => {
+//     const teamId = order.team.id;
+//     if (!teamOrdersMap[teamId]) {
+//       teamOrdersMap[teamId] = {
+//         teamName: order.team.name,
+//         address: order?.team?.address?.address,
+//         leader: {
+//           name: order.team.leader.name,
+//           phone: order.team.leader.phone,
+//         },
+//         teamId: teamId,
+//         totalOrder: 0,
+//         orders: [],
+//       };
+//     }
 
-    teamOrdersMap[teamId].totalOrder += 1;
-    teamOrdersMap[teamId].orders.push({
-      id: order.id,
-      userId: order.team.leader_id,
-      user: {
-        name: order.user.name,
-        phone: order.user.phone,
-      },
-    });
-  });
+//     teamOrdersMap[teamId].totalOrder += 1;
+//     teamOrdersMap[teamId].orders.push({
+//       id: order.id,
+//       userId: order.team.leader_id,
+//       user: {
+//         name: order.user.name,
+//         phone: order.user.phone,
+//       },
+//     });
+//   });
 
-  // Convert the map to an array
-  const formattedData = Object.values(teamOrdersMap);
+//   // Convert the map to an array
+//   const formattedData = Object.values(teamOrdersMap);
 
-  return formattedData;
-};
+//   return formattedData;
+// };
 
 const getTeams = async (id: number, filterOptions: IFilterOption) => {
   const supplier_id = await getSupplierId(id);
@@ -197,31 +198,47 @@ const getTeams = async (id: number, filterOptions: IFilterOption) => {
   return formattedData;
 };
 
-const getDeliverySpot = async (id: number) => {
+const getDeliverySpot = async (id: number, status: string) => {
   const getDate = formatLocalTime(Date.now());
   const supplier_id = await getSupplierId(id);
-  const result = await prisma.address.findMany({
+  let statusQuery = {};
+  if (status == 'pickup') {
+    statusQuery = { pickup_status: 'enable' };
+  } else {
+    statusQuery = { status: 'pending' };
+  }
+
+  const result = await prisma.supplierInfo.findUnique({
     where: {
-      supplier_id,
+      id: supplier_id,
     },
     select: {
-      address: true,
-      id: true,
-      Team: {
+      Order: {
+        where: {
+          delivery_date: getDate.formatDefaultDateAndTime,
+          ...statusQuery,
+        },
         select: {
-          name: true,
+          delivery_date: true,
           id: true,
-          leader: {
+          team_id: true,
+          status: true,
+          pickup_status: true,
+          team: {
             select: {
               name: true,
-              phone: true,
-            },
-          },
-          order: {
-            where: {
-              delivery_date: getDate.formatDefaultDateAndTime,
-              status: {
-                not: 'canceled',
+              id: true,
+              leader: {
+                select: {
+                  name: true,
+                  phone: true,
+                },
+              },
+              address: {
+                select: {
+                  address: true,
+                  id: true,
+                },
               },
             },
           },
@@ -229,49 +246,48 @@ const getDeliverySpot = async (id: number) => {
       },
     },
   });
-  // Process the fetched data to the desired format
-  const formattedData = result.map(address => ({
-    address: address.address,
-    id: address.id,
-    team: address.Team.map(team => {
-      const pendingOrder = team.order.filter(
-        order => order.status === 'pending'
-      ).length;
-      const readyToPickup = team.order.filter(
-        order => order.pickup_status === 'enable'
-      ).length;
+  const aggregatedData: { [key: number]: AggregatedData } = {};
+  if (!result) {
+    throw new ApiError(404, 'Supplier not Found');
+  }
+  result.Order.forEach(order => {
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const addressId = order.team.address!.id;
+    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+    const address = order.team.address!.address;
+    const teamId = order.team.id;
 
-      return {
-        name: team.name,
-        id: team.id,
-        leaderName: team.leader.name,
-        leaderPhone: team.leader.phone,
-        pendingOrder: pendingOrder,
-        readyToPickup: readyToPickup,
+    if (!aggregatedData[addressId]) {
+      aggregatedData[addressId] = {
+        address: address,
+        id: addressId,
+        team: [],
       };
-    }),
-  }));
-  return formattedData;
+    }
+
+    let team = aggregatedData[addressId].team.find(t => t.id === teamId);
+    if (!team) {
+      team = {
+        name: order.team.name,
+        id: teamId,
+        leaderName: order.team.leader.name,
+        leaderPhone: order.team.leader.phone,
+        pendingOrder: 0,
+        readyToPickup: 0,
+      };
+      aggregatedData[addressId].team.push(team);
+    }
+
+    if (order.status === 'pending') {
+      team.pendingOrder++;
+    }
+    if (order.pickup_status === 'enable') {
+      team.readyToPickup++;
+    }
+  });
+
+  return Object.values(aggregatedData);
 };
-
-// Combine all teams into a single array
-// const combinedTeams = result.flatMap((address) =>
-//   address.Team.map((team) => {
-//     const pendingOrder = team.order.filter(order => order.status === 'pending').length;
-//     const readyToPickup = team.order.filter(order => order.pickup_status === 'enable').length;
-
-//     return {
-//       name: team.name,
-//       id: team.id,
-//       leaderName: team.leader.name,
-//       leaderPhone: team.leader.phone,
-//       pendingOrder: pendingOrder,
-//       readyToPickup: readyToPickup,
-//       address: address.address, // Include address inside each team
-//     };
-//   })
-// );
-// return combinedTeams
 
 const getUsers = async (pageNumber: number, filterOptions: IFilterOption) => {
   const result = await adminUserService.getUsers(
@@ -287,11 +303,33 @@ const getTransactions = async (
   pageNumber: number,
   filterOptions: IFilterOption
 ) => {
-  const meta = pagination({ page: pageNumber, limit: 10 });
+  const meta = pagination({ page: pageNumber, limit: 15 });
   const { skip, take, orderBy, page } = meta;
   const queryOption: { [key: string]: any } = {};
+  const { search, ...restOptions } = filterOptions;
   if (Object.keys(filterOptions).length) {
-    Object.entries(queryOption).forEach(([field, value]) => {
+    if (search) {
+      queryOption['OR'] = [
+        {
+          user: {
+            name: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+        {
+          user: {
+            phone: {
+              contains: search,
+              mode: 'insensitive',
+            },
+          },
+        },
+      ];
+    }
+
+    Object.entries(restOptions).forEach(([field, value]) => {
       queryOption[field] = value;
     });
   }
@@ -307,11 +345,19 @@ const getTransactions = async (
     select: {
       date: true,
       status: true,
+      receiver_id: true,
       amount: true,
+      user: {
+        select: {
+          name: true,
+          phone: true,
+        },
+      },
     },
   });
   const totalCount = await prisma.transaction.count({
     where: {
+      receiver_id: id,
       ...queryOption,
     },
   });
@@ -322,11 +368,12 @@ const getTransactions = async (
   };
 };
 
-const deliverOrder = async (id: number, supplier_id: number) => {
+const deliverOrder = async (team_id: number, id: number) => {
   const todayDate = formatLocalTime(new Date());
+  const supplier_id = await getSupplierId(id);
   const isValidOrder = await prisma.order.findFirst({
     where: {
-      team_id: id,
+      team_id,
       supplier_id,
       status: 'pending',
       delivery_date: {
@@ -339,7 +386,7 @@ const deliverOrder = async (id: number, supplier_id: number) => {
   }
   const result = await prisma.order.updateMany({
     where: {
-      team_id: id,
+      team_id,
       status: 'pending',
       supplier_id,
       delivery_date: {
@@ -353,10 +400,12 @@ const deliverOrder = async (id: number, supplier_id: number) => {
   });
   return result;
 };
-const pickBoxes = async (id: number, supplier_id: number) => {
+
+const pickBoxes = async (team_id: number, id: number) => {
+  const supplier_id = await getSupplierId(id);
   const isValidOrder = await prisma.order.findFirst({
     where: {
-      team_id: id,
+      team_id,
       supplier_id,
       pickup_status: 'enable',
     },
@@ -366,7 +415,7 @@ const pickBoxes = async (id: number, supplier_id: number) => {
   }
   const result = await prisma.order.updateMany({
     where: {
-      team_id: id,
+      team_id,
       pickup_status: 'enable',
       supplier_id,
     },
@@ -379,8 +428,8 @@ const pickBoxes = async (id: number, supplier_id: number) => {
 
 const rechargeBalance = async (
   id: number,
-  balance: number,
-  receiverId: number
+  receiverId: number,
+  balance: number
 ) => {
   const transaction_type: TransactionType = 'deposit';
 
@@ -421,13 +470,9 @@ const rechargeBalance = async (
 };
 
 export const supplierService = {
-  getOrders,
   getTeams,
   getDeliverySpot,
   getTransactions,
-
-  //get teams by address and supplier id
-
   getUsers,
   rechargeBalance,
   deliverOrder,
