@@ -124,7 +124,18 @@ const getOrders = async (
     include: {
       team: {
         select: {
-          address: true,
+          address: {
+            select: {
+              address: true,
+              supplier: {
+                select: {
+                  id: true,
+                  contact_no: true,
+                  name: true,
+                },
+              },
+            },
+          },
           address_id: true,
           due_boxes: true,
           leader: {
@@ -142,6 +153,12 @@ const getOrders = async (
           name: true,
           id: true,
           phone: true,
+        },
+      },
+      supplier: {
+        select: {
+          name: true,
+          contact_no: true,
         },
       },
     },
@@ -176,6 +193,7 @@ const getOrders = async (
         status,
         due_boxes,
         address: address?.address,
+        supplier: address?.supplier,
         order_count: 1,
         orderList: [
           {

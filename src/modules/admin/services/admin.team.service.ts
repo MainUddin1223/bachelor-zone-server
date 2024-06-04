@@ -265,6 +265,12 @@ const getTeams = async (pageNumber: number, filterOptions: IFilterOption) => {
         select: {
           address: true,
           id: true,
+          supplier: {
+            select: {
+              name: true,
+              contact_no: true,
+            },
+          },
         },
       },
       leader: {
@@ -313,7 +319,18 @@ const getTeamInfoById = async (id: number) => {
       is_deleted: false,
     },
     include: {
-      address: true,
+      address: {
+        select: {
+          address: true,
+          id: true,
+          supplier: {
+            select: {
+              name: true,
+              contact_no: true,
+            },
+          },
+        },
+      },
       leader: {
         select: {
           id: true,

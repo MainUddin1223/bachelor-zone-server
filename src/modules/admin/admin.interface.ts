@@ -24,6 +24,7 @@ export interface AggregatedOrder {
   leaderPhoneNumber: string;
   status: string;
   address?: string;
+  supplier?: any;
   order_count: number;
   due_boxes: number;
   orderList: any[];
@@ -34,6 +35,8 @@ export interface TeamOrderData {
   order_count: number;
   orderList: any[];
   delivery_date: string;
+  pendingOrder: number;
+  receivedOrder: number;
 }
 export interface AggregatedUsers {
   team_id?: number;
