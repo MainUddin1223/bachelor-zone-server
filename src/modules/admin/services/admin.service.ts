@@ -8,6 +8,7 @@ import { adminUserService } from './admin.user.service';
 import { adminTeamService } from './admin.team.service';
 import { adminTransactionService } from './admin.transaction.service';
 import { adminSupplierService } from './admin.supplier.service';
+import { pagination } from '../../../utils/helpers/pagination';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
 
@@ -415,6 +416,150 @@ const getTotalStatics = async () => {
   };
 };
 
+interface ProcessedTeamData {
+  totalMembers: number;
+  totalPendingOrder: number;
+  canceledOrder: number;
+  totalReadyToPickup: number;
+  totalDueBoxes: number;
+  totalCompletedOrder: number;
+}
+
+const getDeliverySpot = async (
+  date: string,
+  pageNumber: number,
+  filterOptions: any
+) => {
+  const meta = pagination({ page: pageNumber, limit: 10 });
+  const { skip, take, orderBy, page } = meta;
+  const queryOption: { [key: string]: any } = {};
+  if (Object.keys(filterOptions).length) {
+    const { search, ...restOptions } = filterOptions;
+
+    if (search) {
+      queryOption['OR'] = [
+        {
+          address: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
+    Object.entries(restOptions).forEach(([field, value]) => {
+      queryOption[field] = value;
+    });
+  }
+  const result = await prisma.address.findMany({
+    skip,
+    take,
+    orderBy,
+    where: {
+      ...queryOption,
+    },
+    select: {
+      address: true,
+      id: true,
+      supplier: {
+        select: {
+          name: true,
+          contact_no: true,
+        },
+      },
+      Team: {
+        select: {
+          due_boxes: true,
+          id: true,
+          member: true,
+          name: true,
+          leader: {
+            select: {
+              name: true,
+              phone: true,
+            },
+          },
+          order: {
+            where: {
+              delivery_date: date,
+            },
+            select: {
+              id: true,
+              status: true,
+              pickup_status: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  const totalCount = await prisma.address.count({
+    where: {
+      ...queryOption,
+    },
+  });
+  const totalPage = totalCount > take ? totalCount / Number(take) : 1;
+
+  //format data
+  const formattedData = result.map(addressData => {
+    const address = addressData.address;
+    const supplierName = addressData.supplier.name;
+    const supplierContactNo = addressData.supplier.contact_no;
+    const totalTeams = addressData.Team.length;
+
+    const teamData = addressData.Team.reduce<ProcessedTeamData>(
+      (teamAcc, team) => {
+        teamAcc.totalMembers += team.member;
+        teamAcc.totalDueBoxes += team.due_boxes;
+
+        team.order.forEach(order => {
+          if (order.status === 'pending') {
+            teamAcc.totalPendingOrder += 1;
+          }
+          if (order.status === 'canceled') {
+            teamAcc.canceledOrder += 1;
+          }
+          if (order.pickup_status === 'enable') {
+            teamAcc.totalReadyToPickup += 1;
+          }
+          if (order.pickup_status === 'received') {
+            teamAcc.totalCompletedOrder += 1;
+          }
+        });
+
+        return teamAcc;
+      },
+      {
+        totalMembers: 0,
+        totalPendingOrder: 0,
+        canceledOrder: 0,
+        totalReadyToPickup: 0,
+        totalCompletedOrder: 0,
+        totalDueBoxes: 0,
+      }
+    );
+
+    return {
+      address,
+      supplierName,
+      supplierContactNo,
+      totalTeams,
+      date,
+      totalPendingOrder: teamData.totalPendingOrder,
+      canceled_order: teamData.canceledOrder,
+      totalAvailablePickup: teamData.totalReadyToPickup,
+      totalDueBoxes: teamData.totalDueBoxes,
+      totalCompletedOrder: teamData.totalCompletedOrder,
+      totalMembers: teamData.totalMembers,
+    };
+  });
+
+  return {
+    data: formattedData,
+    meta: { page: page, size: take, total: totalCount, totalPage },
+  };
+};
+
 export const adminService = {
   ...adminUserService,
   ...adminTeamService,
@@ -424,4 +569,5 @@ export const adminService = {
   updateAddress,
   getOrders,
   getTotalStatics,
+  getDeliverySpot,
 };

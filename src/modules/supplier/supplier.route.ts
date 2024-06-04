@@ -1,6 +1,10 @@
 import express from 'express';
-import { verifySupplier } from '../../utils/jwtHelpers/verifyAuth';
+import {
+  verifyAdminSupplier,
+  verifySupplier,
+} from '../../utils/jwtHelpers/verifyAuth';
 import { supplierController } from './supplier.controller';
+import { adminController } from '../admin/controllers/admin.controller';
 
 const router = express.Router();
 
@@ -16,6 +20,9 @@ router
 router
   .route('/recharge')
   .post(verifySupplier, supplierController.rechargeBalance);
+router
+  .route('/delivery-address')
+  .get(verifyAdminSupplier, adminController.getDeliverySpot);
 router
   .route('/delivery-spot/:type')
   .get(verifySupplier, supplierController.getDeliverySpot);
