@@ -11,6 +11,7 @@ import { StatusCodes } from 'http-status-codes';
 import { adminService } from '../services/admin.service';
 import pick from '../../../utils/helpers/pick';
 import { teamFilters } from '../admin.constant';
+import { formatLocalTime } from '../../../utils/helpers/timeZone';
 
 const createTeam = catchAsync(async (req: Request, res: Response) => {
   const { error } = CreateTeamSchema.validate(req.body);
@@ -83,11 +84,56 @@ const changeLeader = catchAsync(async (req: Request, res: Response) => {
 
 const deliverOrder = catchAsync(async (req: Request, res: Response) => {
   const teamId = Number(req.params.id);
-  const result = await adminService.deliverOrder(teamId);
+  const role = req.user?.role;
+  const supplier_id = req.user?.id;
+  // query
+  const todayDate = formatLocalTime(new Date());
+
+  const query = {
+    team_id: teamId,
+    status: 'pending',
+    delivery_date: {
+      equals: todayDate.formatDefaultDateAndTime,
+    },
+  };
+  const result =
+    role === 'supplier'
+      ? await adminService.pickupOrders({ ...query, supplier_id })
+      : await adminService.pickupOrders(query);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
     message: 'Orders delivered successfully',
+    data: result,
+  });
+});
+
+const pickupOrder = catchAsync(async (req: Request, res: Response) => {
+  const teamId = Number(req.params.id);
+  const role = req.user?.role;
+  const supplier_id = req.user?.id;
+  // query
+  const todayDate = formatLocalTime(new Date());
+
+  const query = {
+    team_id: teamId,
+    status: 'received',
+    pickup_status: 'enable',
+  };
+  const result =
+    role === 'supplier'
+      ? await adminService.pickupOrders({
+          ...query,
+          supplier_id,
+          delivery_date: {
+            equals: todayDate.formatDefaultDateAndTime,
+          },
+        })
+      : await adminService.pickupOrders(query);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Orders pick up successfully',
     data: result,
   });
 });
@@ -161,4 +207,5 @@ export const adminTeamController = {
   getTeamInfoById,
   updateDueBoxes,
   deliverOrder,
+  pickupOrder,
 };

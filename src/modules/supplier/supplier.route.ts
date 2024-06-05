@@ -27,6 +27,12 @@ router
   .route('/delivery-address/:id')
   .get(verifyAdminSupplier, adminController.getDeliverySpotDetails);
 router
+  .route('/deliver-order/:id')
+  .get(verifyAdminSupplier, adminController.deliverOrder);
+router
+  .route('/pickup-order/:id')
+  .get(verifyAdminSupplier, adminController.pickupOrder);
+router
   .route('/delivery-spot/:type')
   .get(verifySupplier, supplierController.getDeliverySpot);
 

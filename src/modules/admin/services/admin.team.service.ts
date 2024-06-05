@@ -4,8 +4,6 @@ import ApiError from '../../../utils/errorHandlers/apiError';
 import { generateRandomID } from '../../../utils/helpers/helpers';
 import { IFilterOption } from '../../../utils/helpers/interface';
 import { pagination } from '../../../utils/helpers/pagination';
-import { formatLocalTime } from '../../../utils/helpers/timeZone';
-
 const prisma = new PrismaClient();
 
 const createTeam = async (data: ICreateTeam) => {
@@ -356,15 +354,10 @@ const updateDueBoxes = async (id: number, amount: number) => {
   return result;
 };
 
-const deliverOrder = async (id: number) => {
-  const todayDate = formatLocalTime(new Date());
+const deliverOrder = async (data: any) => {
   const isValidOrder = await prisma.order.findFirst({
     where: {
-      team_id: id,
-      status: 'pending',
-      delivery_date: {
-        equals: todayDate.formatDefaultDateAndTime,
-      },
+      ...data,
     },
   });
   if (!isValidOrder) {
@@ -372,14 +365,29 @@ const deliverOrder = async (id: number) => {
   }
   const result = await prisma.order.updateMany({
     where: {
-      team_id: id,
-      status: 'pending',
-      delivery_date: {
-        equals: todayDate.formatDefaultDateAndTime,
-      },
+      ...data,
     },
     data: {
       status: 'received',
+    },
+  });
+  return result;
+};
+const pickupOrders = async (data: any) => {
+  const isValidOrder = await prisma.order.findFirst({
+    where: {
+      ...data,
+    },
+  });
+  if (!isValidOrder) {
+    throw new ApiError(400, 'Invalid order');
+  }
+  const result = await prisma.order.updateMany({
+    where: {
+      ...data,
+    },
+    data: {
+      pickup_status: 'received',
     },
   });
   return result;
@@ -393,4 +401,5 @@ export const adminTeamService = {
   getTeamInfoById,
   updateDueBoxes,
   deliverOrder,
+  pickupOrders,
 };
