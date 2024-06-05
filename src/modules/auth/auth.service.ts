@@ -41,6 +41,7 @@ const signUp = async (payload: ISignUpPayload) => {
     role: result.role,
     id: result.id,
     is_claimed: false,
+    secretCode: result.password,
   };
   const accessToken = await jwtToken.createToken(
     accessData,
@@ -80,6 +81,12 @@ const login = async (payload: ILoginPayload) => {
       errorMessages.somethingWrongError
     );
   }
+  if (isUserExist.role !== 'user') {
+    throw new ApiError(
+      StatusCodes.INTERNAL_SERVER_ERROR,
+      errorMessages.somethingWrongError
+    );
+  }
 
   const isPasswordMatched = await bcrypt.compare(
     password,
@@ -100,6 +107,7 @@ const login = async (payload: ILoginPayload) => {
   const accessData = {
     role: isUserExist.role,
     id: isUserExist.id,
+    secretCode: isUserExist.password,
     is_claimed,
     is_in_team,
   };
@@ -114,6 +122,7 @@ const login = async (payload: ILoginPayload) => {
     phone: isUserExist.phone,
   };
 };
+
 const adminLogin = async (payload: ILoginPayload) => {
   const { phone, password } = payload;
   const isUserExist = await prisma.auth.findFirst({
@@ -154,6 +163,7 @@ const adminLogin = async (payload: ILoginPayload) => {
   const accessData = {
     role: isUserExist.role,
     id: isUserExist.id,
+    secretCode: isUserExist.password,
   };
   const accessToken = await jwtToken.createToken(
     accessData,
@@ -165,6 +175,7 @@ const adminLogin = async (payload: ILoginPayload) => {
   };
 };
 
+// bugs
 const changePassword = async (payload: IChangePasswordPayload) => {
   const { oldPassword, newPassword, id } = payload;
   const hashedPassword = bcrypt.hashSync(newPassword, 10);
@@ -204,9 +215,23 @@ const changePassword = async (payload: IChangePasswordPayload) => {
   }
 };
 
+const changePasswordByAdmin = async (id: number, password: string) => {
+  const hashedPassword = bcrypt.hashSync(password, 10);
+  const result = await prisma.auth.update({
+    where: {
+      id,
+    },
+    data: {
+      password: hashedPassword,
+    },
+  });
+  return result;
+};
+
 export const authService = {
   signUp,
   login,
   changePassword,
   adminLogin,
+  changePasswordByAdmin,
 };

@@ -1,10 +1,9 @@
 import { PrismaClient } from '@prisma/client';
-import { ICreateTeam } from './admin.interface';
-import ApiError from '../../utils/errorHandlers/apiError';
-import { generateRandomID } from '../../utils/helpers/helpers';
-import { IFilterOption } from '../../utils/helpers/interface';
-import { pagination } from '../../utils/helpers/pagination';
-
+import { ICreateTeam } from '../admin.interface';
+import ApiError from '../../../utils/errorHandlers/apiError';
+import { generateRandomID } from '../../../utils/helpers/helpers';
+import { IFilterOption } from '../../../utils/helpers/interface';
+import { pagination } from '../../../utils/helpers/pagination';
 const prisma = new PrismaClient();
 
 const createTeam = async (data: ICreateTeam) => {
@@ -215,7 +214,6 @@ const changeLeader = async (leaderId: number, team_id: number) => {
   });
   return { message: `Successfully changed the leader` };
 };
-
 const getTeams = async (pageNumber: number, filterOptions: IFilterOption) => {
   const meta = pagination({ page: pageNumber, limit: 10 });
   const { skip, take, orderBy, page } = meta;
@@ -265,6 +263,12 @@ const getTeams = async (pageNumber: number, filterOptions: IFilterOption) => {
         select: {
           address: true,
           id: true,
+          supplier: {
+            select: {
+              name: true,
+              contact_no: true,
+            },
+          },
         },
       },
       leader: {
@@ -286,9 +290,116 @@ const getTeams = async (pageNumber: number, filterOptions: IFilterOption) => {
     meta: { page: page, size: take, total: totalCount, totalPage },
   };
 };
+
+const getTeamInfoById = async (id: number) => {
+  const userInfo = await prisma.userInfo.findMany({
+    where: {
+      team_id: id,
+      is_claimed: true,
+      user: {
+        is_deleted: false,
+      },
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+    },
+  });
+
+  const result = await prisma.team.findUnique({
+    where: {
+      id,
+      is_deleted: false,
+    },
+    include: {
+      address: {
+        select: {
+          address: true,
+          id: true,
+          supplier: {
+            select: {
+              name: true,
+              contact_no: true,
+            },
+          },
+        },
+      },
+      leader: {
+        select: {
+          id: true,
+          name: true,
+          phone: true,
+        },
+      },
+    },
+  });
+  return { ...result, userInfo };
+};
+
+const updateDueBoxes = async (id: number, amount: number) => {
+  const result = await prisma.team.update({
+    where: {
+      id,
+      is_deleted: false,
+    },
+    data: {
+      due_boxes: amount,
+    },
+  });
+  return result;
+};
+
+const deliverOrder = async (data: any) => {
+  const isValidOrder = await prisma.order.findFirst({
+    where: {
+      ...data,
+    },
+  });
+  if (!isValidOrder) {
+    throw new ApiError(400, 'Invalid order');
+  }
+  const result = await prisma.order.updateMany({
+    where: {
+      ...data,
+    },
+    data: {
+      status: 'received',
+    },
+  });
+  return result;
+};
+const pickupOrders = async (data: any) => {
+  const isValidOrder = await prisma.order.findFirst({
+    where: {
+      ...data,
+    },
+  });
+  if (!isValidOrder) {
+    throw new ApiError(400, 'Invalid order');
+  }
+  const result = await prisma.order.updateMany({
+    where: {
+      ...data,
+    },
+    data: {
+      pickup_status: 'received',
+    },
+  });
+  return result;
+};
+
 export const adminTeamService = {
   createTeam,
   changeTeam,
   changeLeader,
   getTeams,
+  getTeamInfoById,
+  updateDueBoxes,
+  deliverOrder,
+  pickupOrders,
 };

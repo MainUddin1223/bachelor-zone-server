@@ -1,6 +1,6 @@
 import express from 'express';
 import { authController } from './auth.controller';
-import { verifyAuth } from '../../utils/jwtHelpers/verifyAuth';
+import { verifyAdmin, verifyAuth } from '../../utils/jwtHelpers/verifyAuth';
 
 const router = express.Router();
 
@@ -10,5 +10,8 @@ router.route('/admin-login').post(authController.adminLogin);
 router
   .route('/change-password')
   .post(verifyAuth, authController.changePassword);
+router
+  .route('/admin-change-password')
+  .post(verifyAdmin, authController.changePasswordByAdmin);
 
 export default { authRouter: router };

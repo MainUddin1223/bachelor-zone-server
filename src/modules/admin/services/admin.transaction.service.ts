@@ -1,12 +1,16 @@
 import { PrismaClient, TransactionType } from '@prisma/client';
-import ApiError from '../../utils/errorHandlers/apiError';
-import { IListedExpenses } from './admin.interface';
-import { pagination } from '../../utils/helpers/pagination';
+import ApiError from '../../../utils/errorHandlers/apiError';
+import { IListedExpenses } from '../admin.interface';
+import { pagination } from '../../../utils/helpers/pagination';
 import dayjs from 'dayjs';
 
 const prisma = new PrismaClient();
 
-const rechargeBalance = async (id: number, balance: number) => {
+const rechargeBalance = async (
+  id: number,
+  balance: number,
+  receiverId: number
+) => {
   const transaction_type: TransactionType = 'deposit';
 
   const result = await prisma.$transaction(async tx => {
@@ -35,6 +39,7 @@ const rechargeBalance = async (id: number, balance: number) => {
         description: 'Balance recharge',
         amount: balance,
         user_id: id,
+        receiver_id: receiverId,
       },
     });
     return { message: 'Recharge successful' };
@@ -46,7 +51,8 @@ const rechargeBalance = async (id: number, balance: number) => {
 const refundBalance = async (
   id: number,
   balance: number,
-  description: string
+  description: string,
+  receiverId: number
 ) => {
   const transaction_type: TransactionType = 'refund';
 
@@ -83,6 +89,7 @@ const refundBalance = async (
         description,
         amount: balance,
         user_id: id,
+        receiver_id: receiverId,
       },
     });
     return { message: 'Refund successful' };

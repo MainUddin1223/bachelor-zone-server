@@ -5,6 +5,13 @@ export const addressSchema = Joi.object({
     'string.pattern.base': 'Invalid Address',
     'any.required': 'Address is required',
   }),
+  supplierId: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid amount',
+      'any.required': 'Amount is required',
+    })
+    .strict(),
 });
 
 export const updateAddressSchema = Joi.object({
@@ -168,5 +175,39 @@ export const expensesSchema = Joi.object({
 export const getOrderSchema = Joi.object({
   date: Joi.string().optional().messages({
     'string.pattern.base': 'Invalid Date',
+  }),
+});
+
+//supplier
+
+export const createSupplierSchema = Joi.object({
+  name: Joi.string().required().messages({
+    'string.pattern.base': 'Invalid contact no',
+    'any.required': 'Contact no is required',
+  }),
+  contact_no: Joi.string()
+    .pattern(/^\+8801[0-9]{9}$/)
+    .required()
+    .messages({
+      'string.pattern.base': 'Invalid name',
+      'any.required': 'Name is required',
+    }),
+  id: Joi.number()
+    .required()
+    .messages({
+      'number.base': 'Invalid id',
+      'any.required': 'id is required',
+    })
+    .strict(),
+});
+export const updateSupplierSchema = Joi.object({
+  contact_no: Joi.string()
+    .pattern(/^\+8801[0-9]{9}$/)
+    .optional()
+    .messages({
+      'string.pattern.base': 'Invalid contact no',
+    }),
+  name: Joi.string().optional().messages({
+    'string.pattern.base': 'Invalid name',
   }),
 });

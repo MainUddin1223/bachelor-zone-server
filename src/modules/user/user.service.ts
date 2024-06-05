@@ -28,6 +28,7 @@ const placeOrder = async (date: string, userId: number) => {
   const userInfo = await getUserInfo(userId);
 
   const balance = userInfo.Balance;
+  const supplier_id = userInfo?.address.supplier_id;
   if (mealCost > balance) {
     throw new ApiError(403, errorMessage.insufficientBalance);
   }
@@ -48,6 +49,7 @@ const placeOrder = async (date: string, userId: number) => {
         team_id: userInfo.team_id,
         delivery_date: formatDate.formatDefaultDateAndTime,
         price: mealCost,
+        supplier_id,
       },
     });
     if (!createOrder.id) {
@@ -365,7 +367,18 @@ const userInfo = async (id: number) => {
   const result = await prisma.userInfo.findFirst({
     where: { user_id: id },
     select: {
-      address: true,
+      address: {
+        select: {
+          address: true,
+          id: true,
+          supplier: {
+            select: {
+              contact_no: true,
+              name: true,
+            },
+          },
+        },
+      },
       team_member: {
         select: {
           leader: { select: { name: true, phone: true, id: true } },
@@ -423,13 +436,16 @@ const userInfo = async (id: number) => {
         delivery_date: todayDateStr,
       },
     });
-    const status = getTodayOrder.find(order => order.status === 'pending');
-    teamInfo = { ...getTeamInfo, order: getTodayOrder.length, status };
+    const orderStatus = getTodayOrder.find(order => order.status === 'pending')
+      ? 'pending'
+      : 'received';
+    teamInfo = { ...getTeamInfo, order: getTodayOrder.length, orderStatus };
   }
 
   const formatInfo = {
     balance: result.Balance,
     address: result.address?.address,
+    supplier: result?.address?.supplier,
     team: result.team_member?.name,
     teamLeader: result.team_member?.leader?.name,
     ordersOfTheDay,
@@ -615,7 +631,15 @@ const getTeamDetails = async (id: number): Promise<any> => {
         select: { name: true, phone: true },
       },
       address: {
-        select: { address: true },
+        select: {
+          address: true,
+          supplier: {
+            select: {
+              name: true,
+              contact_no: true,
+            },
+          },
+        },
       },
     },
   });
@@ -637,7 +661,10 @@ const getTeamDetails = async (id: number): Promise<any> => {
     prisma.order.findMany({
       orderBy: { delivery_date: 'asc' },
       where: {
-        status: 'pending',
+        team_id: teamDetails.id,
+        status: {
+          not: 'canceled',
+        },
         delivery_date: {
           gte: formatLocalTime(Date.now()).formatDefaultDateAndTime,
         },
@@ -661,9 +688,16 @@ const getTeamDetails = async (id: number): Promise<any> => {
         delivery_date: formattedDate,
         status,
         order_count: 1,
+        pendingOrder: status == 'pending' ? 1 : 0,
+        receivedOrder: status == 'received' ? 1 : 0,
         orderList: [{ user_name: user.name, user_phone: user.phone }],
       };
     } else {
+      if (status == 'pending') {
+        aggregatedData[formattedDate].pendingOrder++;
+      } else {
+        aggregatedData[formattedDate].receivedOrder++;
+      }
       aggregatedData[formattedDate].order_count++;
       aggregatedData[formattedDate].orderList.push({
         user_name: user.name,

@@ -1,19 +1,22 @@
 import { PrismaClient } from '@prisma/client';
-import ApiError from '../../utils/errorHandlers/apiError';
-import { AggregatedOrder } from './admin.interface';
-import { lunchCost } from './admin.constant';
+import ApiError from '../../../utils/errorHandlers/apiError';
+import { AggregatedOrder } from '../admin.interface';
+import { mealCost } from '../admin.constant';
 import dayjs from 'dayjs';
-import { IFilterOption } from '../../utils/helpers/interface';
+import { IFilterOption } from '../../../utils/helpers/interface';
 import { adminUserService } from './admin.user.service';
 import { adminTeamService } from './admin.team.service';
 import { adminTransactionService } from './admin.transaction.service';
-import { formatLocalTime } from '../../utils/helpers/timeZone';
+import { adminSupplierService } from './admin.supplier.service';
+import { pagination } from '../../../utils/helpers/pagination';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
 
 const prisma = new PrismaClient();
 
-const addAddress = async (address: string) => {
+//create address
+
+const addAddress = async (address: string, supplierId: number) => {
   const isAddressExist = await prisma.address.findFirst({
     where: {
       address: {
@@ -25,8 +28,17 @@ const addAddress = async (address: string) => {
   if (isAddressExist) {
     throw new ApiError(403, 'Address already exist');
   }
+
+  const findSupplier = await prisma.supplierInfo.findUnique({
+    where: {
+      id: supplierId,
+    },
+  });
+  if (!findSupplier) {
+    throw new ApiError(404, 'Supplier not found');
+  }
   const result = await prisma.address.create({
-    data: { address },
+    data: { address, supplier_id: supplierId },
   });
   return result;
 };
@@ -113,7 +125,18 @@ const getOrders = async (
     include: {
       team: {
         select: {
-          address: true,
+          address: {
+            select: {
+              address: true,
+              supplier: {
+                select: {
+                  id: true,
+                  contact_no: true,
+                  name: true,
+                },
+              },
+            },
+          },
           address_id: true,
           due_boxes: true,
           leader: {
@@ -131,6 +154,12 @@ const getOrders = async (
           name: true,
           id: true,
           phone: true,
+        },
+      },
+      supplier: {
+        select: {
+          name: true,
+          contact_no: true,
         },
       },
     },
@@ -165,6 +194,7 @@ const getOrders = async (
         status,
         due_boxes,
         address: address?.address,
+        supplier: address?.supplier,
         order_count: 1,
         orderList: [
           {
@@ -193,48 +223,6 @@ const getOrders = async (
   const result = Object.values(aggregatedData);
 
   return { result, orders };
-};
-
-const deliverOrder = async (id: number) => {
-  const todayDate = formatLocalTime(new Date());
-  const isValidOrder = await prisma.order.findFirst({
-    where: {
-      team_id: id,
-      status: 'pending',
-      delivery_date: {
-        equals: todayDate.formatDefaultDateAndTime,
-      },
-    },
-  });
-  if (!isValidOrder) {
-    throw new ApiError(400, 'Invalid order');
-  }
-  const result = await prisma.order.updateMany({
-    where: {
-      team_id: id,
-      status: 'pending',
-      delivery_date: {
-        equals: todayDate.formatDefaultDateAndTime,
-      },
-    },
-    data: {
-      status: 'received',
-    },
-  });
-  return result;
-};
-
-const updateDueBoxes = async (id: number, amount: number) => {
-  const result = await prisma.team.update({
-    where: {
-      id,
-      is_deleted: false,
-    },
-    data: {
-      due_boxes: amount,
-    },
-  });
-  return result;
 };
 
 const getTotalStatics = async () => {
@@ -421,21 +409,249 @@ const getTotalStatics = async () => {
       totalTransaction: totalTransaction?._sum?.amount || 0,
       serviceAndBoxFee: boxAndServiceFee,
       totalExpensesOfTheMonth: totalExpensesOfTheMonth?._sum?.amount || 0,
-      totalEarningOfTheMonth: totalEarningOfTheMonth * lunchCost || 0,
+      totalEarningOfTheMonth: totalEarningOfTheMonth * mealCost || 0,
       totalExpenses: totalExpenses?._sum?.amount || 0,
-      totalEarning: totalEarning * lunchCost + boxAndServiceFee,
+      totalEarning: totalEarning * mealCost + boxAndServiceFee,
     },
   };
+};
+
+interface ProcessedTeamData {
+  totalMembers: number;
+  totalPendingOrder: number;
+  canceledOrder: number;
+  totalReadyToPickup: number;
+  totalDueBoxes: number;
+  totalCompletedOrder: number;
+}
+
+const getDeliverySpot = async (
+  date: string,
+  pageNumber: number,
+  filterOptions: any
+) => {
+  const meta = pagination({ page: pageNumber, limit: 10 });
+  const { skip, take, orderBy, page } = meta;
+  const queryOption: { [key: string]: any } = {};
+  if (Object.keys(filterOptions).length) {
+    const { search, ...restOptions } = filterOptions;
+
+    if (search) {
+      queryOption['OR'] = [
+        {
+          address: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
+    Object.entries(restOptions).forEach(([field, value]) => {
+      queryOption[field] = value;
+    });
+  }
+  const result = await prisma.address.findMany({
+    skip,
+    take,
+    orderBy,
+    where: {
+      ...queryOption,
+    },
+    select: {
+      address: true,
+      id: true,
+      supplier: {
+        select: {
+          name: true,
+          contact_no: true,
+        },
+      },
+      Team: {
+        select: {
+          due_boxes: true,
+          id: true,
+          member: true,
+          name: true,
+          leader: {
+            select: {
+              name: true,
+              phone: true,
+            },
+          },
+          order: {
+            where: {
+              delivery_date: date,
+            },
+            select: {
+              id: true,
+              status: true,
+              pickup_status: true,
+            },
+          },
+        },
+      },
+    },
+  });
+  const totalCount = await prisma.address.count({
+    where: {
+      ...queryOption,
+    },
+  });
+  const totalPage = totalCount > take ? totalCount / Number(take) : 1;
+
+  //format data
+  const formattedData = result.map(addressData => {
+    const address = addressData.address;
+    const supplierName = addressData.supplier.name;
+    const supplierContactNo = addressData.supplier.contact_no;
+    const totalTeams = addressData.Team.length;
+
+    const teamData = addressData.Team.reduce<ProcessedTeamData>(
+      (teamAcc, team) => {
+        teamAcc.totalMembers += team.member;
+        teamAcc.totalDueBoxes += team.due_boxes;
+
+        team.order.forEach(order => {
+          if (order.status === 'pending') {
+            teamAcc.totalPendingOrder += 1;
+          }
+          if (order.status === 'canceled') {
+            teamAcc.canceledOrder += 1;
+          }
+          if (order.pickup_status === 'enable') {
+            teamAcc.totalReadyToPickup += 1;
+          }
+          if (order.pickup_status === 'received') {
+            teamAcc.totalCompletedOrder += 1;
+          }
+        });
+
+        return teamAcc;
+      },
+      {
+        totalMembers: 0,
+        totalPendingOrder: 0,
+        canceledOrder: 0,
+        totalReadyToPickup: 0,
+        totalCompletedOrder: 0,
+        totalDueBoxes: 0,
+      }
+    );
+
+    return {
+      address,
+      supplierName,
+      supplierContactNo,
+      totalTeams,
+      date,
+      totalPendingOrder: teamData.totalPendingOrder,
+      canceled_order: teamData.canceledOrder,
+      totalAvailablePickup: teamData.totalReadyToPickup,
+      totalDueBoxes: teamData.totalDueBoxes,
+      totalCompletedOrder: teamData.totalCompletedOrder,
+      totalMembers: teamData.totalMembers,
+    };
+  });
+
+  return {
+    data: formattedData,
+    meta: { page: page, size: take, total: totalCount, totalPage },
+  };
+};
+const getDeliverySpotDetails = async (date: string, data: any) => {
+  console.log(date);
+
+  const result = await prisma.address.findFirst({
+    where: {
+      ...data,
+    },
+    select: {
+      address: true,
+      id: true,
+      supplier: {
+        select: {
+          name: true,
+          contact_no: true,
+        },
+      },
+      Team: {
+        select: {
+          due_boxes: true,
+          id: true,
+          member: true,
+          name: true,
+          leader: {
+            select: {
+              name: true,
+              phone: true,
+            },
+          },
+          order: {
+            where: {
+              delivery_date: date,
+            },
+            select: {
+              id: true,
+              status: true,
+              pickup_status: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!result) {
+    throw new ApiError(404, 'Address not found');
+  }
+  //format data
+  const processTeams = (teams: any) => {
+    return teams.map((team: any) => {
+      const totalPendingOrder = team.order.filter(
+        (o: any) => o.status === 'pending'
+      ).length;
+      const totalCanceledOrder = team.order.filter(
+        (o: any) => o.status === 'canceled'
+      ).length;
+      const totalDeliverOrder = team.order.filter(
+        (o: any) => o.status === 'deliver'
+      ).length;
+      const pickUp_status = team.order.some(
+        (o: any) => o.pickup_status === 'enable'
+      );
+
+      return {
+        ...team,
+        totalPendingOrder,
+        totalCanceledOrder,
+        totalDeliverOrder,
+        pickUp_status,
+      };
+    });
+  };
+
+  // Construct the final result
+  const finalResult = {
+    address: result.address,
+    id: result.id,
+    supplierPhone: result.supplier ? result.supplier.contact_no : null,
+    supplierName: result.supplier ? result.supplier.name : null,
+    Teams: processTeams(result.Team),
+  };
+
+  return finalResult;
 };
 
 export const adminService = {
   ...adminUserService,
   ...adminTeamService,
   ...adminTransactionService,
-  deliverOrder,
+  ...adminSupplierService,
   addAddress,
   updateAddress,
   getOrders,
-  updateDueBoxes,
   getTotalStatics,
+  getDeliverySpot,
+  getDeliverySpotDetails,
 };
