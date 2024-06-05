@@ -131,6 +131,39 @@ const getDeliverySpot = catchAsync(async (req: Request, res: Response) => {
   }
 });
 
+const getDeliverySpotDetails = catchAsync(
+  async (req: Request, res: Response) => {
+    const id = Number(req?.user?.id);
+    const addressId = Number(req.params.id);
+    const orderDate = req?.query?.date ? req?.query?.date : dayjs(Date.now());
+    const formatDate = formatLocalTime(orderDate);
+    const role = req?.user?.role;
+    if (role == 'supplier') {
+      const result = await adminService.getDeliverySpotDetails(
+        formatDate.formatDefaultDateAndTime,
+        { id: addressId, supplier_id: id }
+      );
+      sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: 'Delivery spot details retrieved successfully',
+        data: result,
+      });
+    } else {
+      const result = await adminService.getDeliverySpotDetails(
+        formatDate.formatDefaultDateAndTime,
+        { id: addressId }
+      );
+      sendResponse(res, {
+        statusCode: StatusCodes.OK,
+        success: true,
+        message: 'Delivery spot details retrieved successfully',
+        data: result,
+      });
+    }
+  }
+);
+
 // supplier
 
 export const adminController = {
@@ -139,6 +172,7 @@ export const adminController = {
   getOrders,
   getTotalStatics,
   getDeliverySpot,
+  getDeliverySpotDetails,
   // Users
   ...adminUserController,
   //supplier

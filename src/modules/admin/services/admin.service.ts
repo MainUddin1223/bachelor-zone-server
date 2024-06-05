@@ -1,7 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import ApiError from '../../../utils/errorHandlers/apiError';
 import { AggregatedOrder } from '../admin.interface';
-import { lunchCost } from '../admin.constant';
+import { mealCost } from '../admin.constant';
 import dayjs from 'dayjs';
 import { IFilterOption } from '../../../utils/helpers/interface';
 import { adminUserService } from './admin.user.service';
@@ -409,9 +409,9 @@ const getTotalStatics = async () => {
       totalTransaction: totalTransaction?._sum?.amount || 0,
       serviceAndBoxFee: boxAndServiceFee,
       totalExpensesOfTheMonth: totalExpensesOfTheMonth?._sum?.amount || 0,
-      totalEarningOfTheMonth: totalEarningOfTheMonth * lunchCost || 0,
+      totalEarningOfTheMonth: totalEarningOfTheMonth * mealCost || 0,
       totalExpenses: totalExpenses?._sum?.amount || 0,
-      totalEarning: totalEarning * lunchCost + boxAndServiceFee,
+      totalEarning: totalEarning * mealCost + boxAndServiceFee,
     },
   };
 };
@@ -559,6 +559,89 @@ const getDeliverySpot = async (
     meta: { page: page, size: take, total: totalCount, totalPage },
   };
 };
+const getDeliverySpotDetails = async (date: string, data: any) => {
+  console.log(date);
+
+  const result = await prisma.address.findFirst({
+    where: {
+      ...data,
+    },
+    select: {
+      address: true,
+      id: true,
+      supplier: {
+        select: {
+          name: true,
+          contact_no: true,
+        },
+      },
+      Team: {
+        select: {
+          due_boxes: true,
+          id: true,
+          member: true,
+          name: true,
+          leader: {
+            select: {
+              name: true,
+              phone: true,
+            },
+          },
+          order: {
+            where: {
+              delivery_date: date,
+            },
+            select: {
+              id: true,
+              status: true,
+              pickup_status: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!result) {
+    throw new ApiError(404, 'Address not found');
+  }
+  //format data
+  const processTeams = (teams: any) => {
+    return teams.map((team: any) => {
+      const totalPendingOrder = team.order.filter(
+        (o: any) => o.status === 'pending'
+      ).length;
+      const totalCanceledOrder = team.order.filter(
+        (o: any) => o.status === 'canceled'
+      ).length;
+      const totalDeliverOrder = team.order.filter(
+        (o: any) => o.status === 'deliver'
+      ).length;
+      const pickUp_status = team.order.some(
+        (o: any) => o.pickup_status === 'enable'
+      );
+
+      return {
+        ...team,
+        totalPendingOrder,
+        totalCanceledOrder,
+        totalDeliverOrder,
+        pickUp_status,
+      };
+    });
+  };
+
+  // Construct the final result
+  const finalResult = {
+    address: result.address,
+    id: result.id,
+    supplierPhone: result.supplier ? result.supplier.contact_no : null,
+    supplierName: result.supplier ? result.supplier.name : null,
+    Teams: processTeams(result.Team),
+  };
+
+  return finalResult;
+};
 
 export const adminService = {
   ...adminUserService,
@@ -570,4 +653,5 @@ export const adminService = {
   getOrders,
   getTotalStatics,
   getDeliverySpot,
+  getDeliverySpotDetails,
 };

@@ -24,6 +24,9 @@ router
   .route('/delivery-address')
   .get(verifyAdminSupplier, adminController.getDeliverySpot);
 router
+  .route('/delivery-address/:id')
+  .get(verifyAdminSupplier, adminController.getDeliverySpotDetails);
+router
   .route('/delivery-spot/:type')
   .get(verifySupplier, supplierController.getDeliverySpot);
 
