@@ -43,9 +43,24 @@ export const getSupplierStatics = async (id: number) => {
       status: 'pending',
     },
   });
+  // Calculate the sum of pending transactions
+  const todayTransactionSum = await prisma.transaction.aggregate({
+    _sum: {
+      amount: true,
+    },
+    where: {
+      receiver_id: id,
+      status: 'pending',
+      date: {
+        gte: getDate.formatDefaultDateAndTime,
+      },
+    },
+  });
 
   // Initialize the result object with the required structure
   const result = {
+    name: supplierInfo?.name,
+    phone: supplierInfo?.contact_no,
     totalTeam: 0,
     totalAddress: 0,
     totalOrder: 0,
@@ -53,8 +68,9 @@ export const getSupplierStatics = async (id: number) => {
     received: 0,
     readyToPickUp: 0,
     totalUser: 0,
-    dueBalance: 0,
+    totalPickedOrder: 0,
     transactionSum: transactionSum._sum.amount || 0,
+    todayTransactionSum: todayTransactionSum._sum.amount || 0,
   };
   // Aggregate the data
   if (supplierInfo) {
@@ -65,10 +81,7 @@ export const getSupplierStatics = async (id: number) => {
     addresses.forEach(address => {
       result.totalAddress += 1;
       result.totalTeam += address.Team.length;
-      address.UserInfo.forEach(user => {
-        result.totalUser += 1;
-        result.dueBalance += user.Balance;
-      });
+      result.totalUser = address.UserInfo.length;
     });
 
     // Count total orders and specific statuses
@@ -82,6 +95,9 @@ export const getSupplierStatics = async (id: number) => {
       }
       if (order.pickup_status === 'enable') {
         result.readyToPickUp += 1;
+      }
+      if (order.pickup_status === 'received') {
+        result.totalPickedOrder += 1;
       }
     });
   }

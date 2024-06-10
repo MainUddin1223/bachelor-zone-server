@@ -417,12 +417,8 @@ const getTotalStatics = async () => {
 };
 
 interface ProcessedTeamData {
-  totalMembers: number;
-  totalPendingOrder: number;
-  canceledOrder: number;
   totalReadyToPickup: number;
   totalDueBoxes: number;
-  totalCompletedOrder: number;
 }
 
 const getDeliverySpot = async (
@@ -503,54 +499,28 @@ const getDeliverySpot = async (
   //format data
   const formattedData = result.map(addressData => {
     const address = addressData.address;
-    const supplierName = addressData.supplier.name;
-    const supplierContactNo = addressData.supplier.contact_no;
+    const addressId = addressData.id;
     const totalTeams = addressData.Team.length;
 
     const teamData = addressData.Team.reduce<ProcessedTeamData>(
       (teamAcc, team) => {
-        teamAcc.totalMembers += team.member;
+        teamAcc.totalReadyToPickup += team.order.length;
         teamAcc.totalDueBoxes += team.due_boxes;
-
-        team.order.forEach(order => {
-          if (order.status === 'pending') {
-            teamAcc.totalPendingOrder += 1;
-          }
-          if (order.status === 'canceled') {
-            teamAcc.canceledOrder += 1;
-          }
-          if (order.pickup_status === 'enable') {
-            teamAcc.totalReadyToPickup += 1;
-          }
-          if (order.pickup_status === 'received') {
-            teamAcc.totalCompletedOrder += 1;
-          }
-        });
-
         return teamAcc;
       },
       {
-        totalMembers: 0,
-        totalPendingOrder: 0,
-        canceledOrder: 0,
         totalReadyToPickup: 0,
-        totalCompletedOrder: 0,
         totalDueBoxes: 0,
       }
     );
 
     return {
       address,
-      supplierName,
-      supplierContactNo,
+      addressId,
       totalTeams,
       date,
-      totalPendingOrder: teamData.totalPendingOrder,
-      canceled_order: teamData.canceledOrder,
       totalAvailablePickup: teamData.totalReadyToPickup,
       totalDueBoxes: teamData.totalDueBoxes,
-      totalCompletedOrder: teamData.totalCompletedOrder,
-      totalMembers: teamData.totalMembers,
     };
   });
 
@@ -559,9 +529,8 @@ const getDeliverySpot = async (
     meta: { page: page, size: take, total: totalCount, totalPage },
   };
 };
-const getDeliverySpotDetails = async (date: string, data: any) => {
-  console.log(date);
 
+const getDeliverySpotDetails = async (date: string, data: any) => {
   const result = await prisma.address.findFirst({
     where: {
       ...data,
@@ -595,6 +564,12 @@ const getDeliverySpotDetails = async (date: string, data: any) => {
               id: true,
               status: true,
               pickup_status: true,
+              user: {
+                select: {
+                  name: true,
+                  phone: true,
+                },
+              },
             },
           },
         },
@@ -626,6 +601,7 @@ const getDeliverySpotDetails = async (date: string, data: any) => {
         totalPendingOrder,
         totalCanceledOrder,
         totalDeliverOrder,
+        date,
         pickUp_status,
       };
     });
