@@ -9,6 +9,7 @@ import { adminTeamService } from './admin.team.service';
 import { adminTransactionService } from './admin.transaction.service';
 import { adminSupplierService } from './admin.supplier.service';
 import { pagination } from '../../../utils/helpers/pagination';
+import { ProcessedTeamData } from '../admin.type';
 // import ApiError from '../../utils/errorHandlers/apiError';
 // import { StatusCodes } from 'http-status-codes';
 
@@ -416,10 +417,7 @@ const getTotalStatics = async () => {
   };
 };
 
-interface ProcessedTeamData {
-  totalReadyToPickup: number;
-  totalDueBoxes: number;
-}
+// get delivery address
 
 const getDeliverySpot = async (
   date: string,
@@ -478,11 +476,7 @@ const getDeliverySpot = async (
           order: {
             where: {
               delivery_date: date,
-            },
-            select: {
-              id: true,
-              status: true,
-              pickup_status: true,
+              status: 'pending',
             },
           },
         },
@@ -501,26 +495,31 @@ const getDeliverySpot = async (
     const address = addressData.address;
     const addressId = addressData.id;
     const totalTeams = addressData.Team.length;
+    const supplier = addressData.supplier;
 
     const teamData = addressData.Team.reduce<ProcessedTeamData>(
       (teamAcc, team) => {
-        teamAcc.totalReadyToPickup += team.order.length;
+        teamAcc.pendingOrder += team.order.length;
         teamAcc.totalDueBoxes += team.due_boxes;
+        teamAcc.totalMembers += team.member;
         return teamAcc;
       },
       {
-        totalReadyToPickup: 0,
+        pendingOrder: 0,
         totalDueBoxes: 0,
+        totalMembers: 0,
       }
     );
 
     return {
       address,
       addressId,
+      supplier,
       totalTeams,
       date,
-      totalAvailablePickup: teamData.totalReadyToPickup,
+      totalOrder: teamData.pendingOrder,
       totalDueBoxes: teamData.totalDueBoxes,
+      totalMembers: teamData.totalMembers,
     };
   });
 
@@ -529,11 +528,11 @@ const getDeliverySpot = async (
     meta: { page: page, size: take, total: totalCount, totalPage },
   };
 };
-
-const getDeliverySpotDetails = async (date: string, data: any) => {
+// get delivery address by id
+const getDeliverySpotDetails = async (date: string, id: number) => {
   const result = await prisma.address.findFirst({
     where: {
-      ...data,
+      id,
     },
     select: {
       address: true,
@@ -559,11 +558,13 @@ const getDeliverySpotDetails = async (date: string, data: any) => {
           order: {
             where: {
               delivery_date: date,
+              status: {
+                not: 'received',
+              },
             },
             select: {
               id: true,
               status: true,
-              pickup_status: true,
               user: {
                 select: {
                   name: true,
@@ -589,20 +590,12 @@ const getDeliverySpotDetails = async (date: string, data: any) => {
       const totalCanceledOrder = team.order.filter(
         (o: any) => o.status === 'canceled'
       ).length;
-      const totalDeliverOrder = team.order.filter(
-        (o: any) => o.status === 'deliver'
-      ).length;
-      const pickUp_status = team.order.some(
-        (o: any) => o.pickup_status === 'enable'
-      );
 
       return {
         ...team,
         totalPendingOrder,
         totalCanceledOrder,
-        totalDeliverOrder,
         date,
-        pickUp_status,
       };
     });
   };
@@ -619,15 +612,210 @@ const getDeliverySpotDetails = async (date: string, data: any) => {
   return finalResult;
 };
 
+// pickup points
+
+const getPickupSpots = async (
+  date: string,
+  pageNumber: number,
+  filterOptions: any
+) => {
+  const meta = pagination({ page: pageNumber, limit: 20 });
+  const { skip, take, orderBy, page } = meta;
+  const queryOption: { [key: string]: any } = {};
+  if (Object.keys(filterOptions).length) {
+    const { search, ...restOptions } = filterOptions;
+
+    if (search) {
+      queryOption['OR'] = [
+        {
+          address: {
+            contains: search,
+            mode: 'insensitive',
+          },
+        },
+      ];
+    }
+
+    Object.entries(restOptions).forEach(([field, value]) => {
+      queryOption[field] = value;
+    });
+  }
+  const result = await prisma.address.findMany({
+    skip,
+    take,
+    orderBy,
+    where: {
+      ...queryOption,
+    },
+    select: {
+      address: true,
+      id: true,
+      supplier: {
+        select: {
+          name: true,
+          contact_no: true,
+        },
+      },
+      Team: {
+        select: {
+          due_boxes: true,
+          id: true,
+          member: true,
+          name: true,
+          leader: {
+            select: {
+              name: true,
+              phone: true,
+            },
+          },
+          order: {
+            where: {
+              delivery_date: date,
+              pickup_status: 'enable',
+            },
+          },
+        },
+      },
+    },
+  });
+  const totalCount = await prisma.address.count({
+    where: {
+      ...queryOption,
+    },
+  });
+  const totalPage = totalCount > take ? totalCount / Number(take) : 1;
+
+  //format data
+  const formattedData = result.map(addressData => {
+    const address = addressData.address;
+    const supplier = addressData.supplier;
+    const addressId = addressData.id;
+    const totalTeams = addressData.Team.length;
+
+    interface ProcessedTeamData {
+      totalReadyToPickup: number;
+      totalDueBoxes: number;
+      totalMembers: number;
+    }
+
+    const teamData = addressData.Team.reduce<ProcessedTeamData>(
+      (teamAcc, team) => {
+        teamAcc.totalMembers += team.member;
+        teamAcc.totalDueBoxes += team.due_boxes;
+        teamAcc.totalReadyToPickup += team.order.length;
+
+        return teamAcc;
+      },
+      {
+        totalMembers: 0,
+        totalReadyToPickup: 0,
+        totalDueBoxes: 0,
+      }
+    );
+
+    return {
+      address,
+      addressId,
+      supplier,
+      totalTeams,
+      date,
+      totalAvailablePickup: teamData.totalReadyToPickup,
+      totalDueBoxes: teamData.totalDueBoxes,
+      totalMembers: teamData.totalMembers,
+    };
+  });
+
+  return {
+    data: formattedData,
+    meta: { page: page, size: take, total: totalCount, totalPage },
+  };
+};
+
+const getPickupSpotDetails = async (date: string, id: number) => {
+  const result = await prisma.address.findFirst({
+    where: {
+      id,
+    },
+    select: {
+      address: true,
+      supplier: {
+        select: {
+          name: true,
+          contact_no: true,
+        },
+      },
+      id: true,
+      Team: {
+        select: {
+          due_boxes: true,
+          id: true,
+          member: true,
+          name: true,
+          leader: {
+            select: {
+              name: true,
+              phone: true,
+            },
+          },
+          order: {
+            where: {
+              delivery_date: date,
+              pickup_status: 'enable',
+            },
+            select: {
+              id: true,
+              status: true,
+              pickup_status: true,
+              user: {
+                select: {
+                  name: true,
+                  phone: true,
+                },
+              },
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!result) {
+    throw new ApiError(404, 'Address not found');
+  }
+  //format data
+  const processTeams = (teams: any) => {
+    return teams.map((team: any) => {
+      const totalAvailableOrderForPickup = team.order.length;
+
+      return {
+        ...team,
+        totalAvailableOrderForPickup,
+        date,
+      };
+    });
+  };
+
+  // Construct the final result
+  const finalResult = {
+    address: result.address,
+    id: result.id,
+    Teams: processTeams(result.Team),
+  };
+
+  return finalResult;
+};
+
 export const adminService = {
   ...adminUserService,
   ...adminTeamService,
   ...adminTransactionService,
   ...adminSupplierService,
+  getPickupSpotDetails,
   addAddress,
   updateAddress,
   getOrders,
   getTotalStatics,
   getDeliverySpot,
   getDeliverySpotDetails,
+  getPickupSpots,
 };

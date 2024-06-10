@@ -7,10 +7,22 @@ import { supplierController } from './supplier.controller';
 import { adminController } from '../admin/controllers/admin.controller';
 
 const router = express.Router();
+
 //get users
 router.route('/users').get(verifySupplier, supplierController.getUsers);
 
-// delivery
+router
+  .route('/recharge')
+  .post(verifySupplier, supplierController.rechargeBalance);
+
+// get transactions
+router
+  .route('/transaction')
+  .get(verifySupplier, supplierController.getTransactions);
+
+// ----------- deliver apis ------------------
+
+// delivery address
 
 router
   .route('/delivery-address')
@@ -27,24 +39,17 @@ router
   .route('/deliver/:id')
   .post(verifySupplier, supplierController.deliverOrder);
 
-router.route('/pick-up/:id').post(verifySupplier, supplierController.pickBoxes);
-router.route('/teams').get(verifySupplier, supplierController.getTeams);
-router
-  .route('/transaction')
-  .get(verifySupplier, supplierController.getTransactions);
-router
-  .route('/recharge')
-  .post(verifySupplier, supplierController.rechargeBalance);
+// ----------- pickup apis ------------------
 
-router
-  .route('/deliver-order/:id')
-  .get(verifyAdminSupplier, adminController.deliverOrder);
-//
+// get pickup points
 router.route('/pickup').get(verifySupplier, supplierController.getPickupSpot);
+
+// get teams by  address id
 router
   .route('/pickup/:id')
   .get(verifySupplier, supplierController.getPickupSpotDetails);
 
+//pickup boxes
 router
   .route('/pickup-order/:id')
   .patch(verifyAdminSupplier, adminController.pickupOrder);

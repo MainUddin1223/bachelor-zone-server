@@ -13,9 +13,6 @@ import { adminTeamController } from './admin.team.controller';
 import { transactionController } from './admin.transaction.controller';
 import { getSupplierStatics } from '../../supplier/supplier.utils';
 import { formatLocalTime } from '../../../utils/helpers/timeZone';
-import { PrismaClient } from '@prisma/client';
-
-const prisma = new PrismaClient();
 
 const addAddress = catchAsync(async (req: Request, res: Response) => {
   const { error } = addressSchema.validate(req.body);
@@ -100,83 +97,84 @@ const getTotalStatics = catchAsync(async (req: Request, res: Response) => {
   }
 });
 
+// get delivery address
+
 const getDeliverySpot = catchAsync(async (req: Request, res: Response) => {
   const orderDate = req?.query?.date ? req?.query?.date : dayjs(Date.now());
   const formatDate = formatLocalTime(orderDate);
-  const role = req?.user?.role;
   const page = req.query.page ? Number(req.query.page) : 1;
   const filter = pick(req.query, teamFilters);
-  if (role == 'supplier') {
-    const id = Number(req?.user?.id);
-    const supplierInfo = await prisma.supplierInfo.findFirst({
-      where: {
-        user_id: id,
-      },
-    });
 
-    const result = await adminService.getDeliverySpot(
-      formatDate.formatDefaultDateAndTime,
-      page,
-      { ...filter, supplier_id: supplierInfo?.id }
-    );
-    sendResponse(res, {
-      statusCode: StatusCodes.OK,
-      success: true,
-      message: 'Delivery spot retrieved successfully',
-      data: result,
-    });
-  } else {
-    const result = await adminService.getDeliverySpot(
-      formatDate.formatDefaultDateAndTime,
-      page,
-      filter
-    );
-    sendResponse(res, {
-      statusCode: StatusCodes.OK,
-      success: true,
-      message: 'Data retrieved successfully',
-      data: result,
-    });
-  }
+  const result = await adminService.getDeliverySpot(
+    formatDate.formatDefaultDateAndTime,
+    page,
+    filter
+  );
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Data retrieved successfully',
+    data: result,
+  });
 });
+
+// get teams by delivery id
 
 const getDeliverySpotDetails = catchAsync(
   async (req: Request, res: Response) => {
     const addressId = Number(req.params.id);
     const orderDate = req?.query?.date ? req?.query?.date : dayjs(Date.now());
     const formatDate = formatLocalTime(orderDate);
-    const role = req?.user?.role;
-    if (role == 'supplier') {
-      const id = Number(req?.user?.id);
-      const supplierInfo = await prisma.supplierInfo.findFirst({
-        where: {
-          user_id: id,
-        },
-      });
-      const result = await adminService.getDeliverySpotDetails(
-        formatDate.formatDefaultDateAndTime,
-        { id: addressId, supplier_id: supplierInfo?.id }
-      );
-      sendResponse(res, {
-        statusCode: StatusCodes.OK,
-        success: true,
-        message: 'Delivery spot details retrieved successfully',
-        data: result,
-      });
-    } else {
-      const result = await adminService.getDeliverySpotDetails(
-        formatDate.formatDefaultDateAndTime,
-        { id: addressId }
-      );
-      sendResponse(res, {
-        statusCode: StatusCodes.OK,
-        success: true,
-        message: 'Delivery spot details retrieved successfully',
-        data: result,
-      });
-    }
+    const result = await adminService.getDeliverySpotDetails(
+      formatDate.formatDefaultDateAndTime,
+      addressId
+    );
+    sendResponse(res, {
+      statusCode: StatusCodes.OK,
+      success: true,
+      message: 'Delivery spot details retrieved successfully',
+      data: result,
+    });
   }
 );
+// get delivery address
+
+const getPickupSpot = catchAsync(async (req: Request, res: Response) => {
+  const orderDate = req?.query?.date ? req?.query?.date : dayjs(Date.now());
+  const formatDate = formatLocalTime(orderDate);
+  const page = req.query.page ? Number(req.query.page) : 1;
+  const filter = pick(req.query, teamFilters);
+
+  const result = await adminService.getPickupSpots(
+    formatDate.formatDefaultDateAndTime,
+    page,
+    filter
+  );
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Data retrieved successfully',
+    data: result,
+  });
+});
+
+// get teams by delivery id
+
+const getPickupSpotDetails = catchAsync(async (req: Request, res: Response) => {
+  const addressId = Number(req.params.id);
+  const orderDate = req?.query?.date ? req?.query?.date : dayjs(Date.now());
+  const formatDate = formatLocalTime(orderDate);
+  const result = await adminService.getPickupSpotDetails(
+    formatDate.formatDefaultDateAndTime,
+    addressId
+  );
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: 'Delivery spot details retrieved successfully',
+    data: result,
+  });
+});
 
 // supplier
 
@@ -187,6 +185,8 @@ export const adminController = {
   getTotalStatics,
   getDeliverySpot,
   getDeliverySpotDetails,
+  getPickupSpot,
+  getPickupSpotDetails,
   // Users
   ...adminUserController,
   //supplier

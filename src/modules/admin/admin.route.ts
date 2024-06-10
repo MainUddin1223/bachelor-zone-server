@@ -37,6 +37,24 @@ router
   .route('/unclaimed-users/:id')
   .get(verifyAdmin, adminController.getUnclaimUserById);
 
+// get delivery spots , Teams and order details
+router
+  .route('/delivery-spots')
+  .get(verifyAdmin, adminController.getDeliverySpot);
+
+// get Teams and order details by address id
+router
+  .route('/delivery-spots/:id')
+  .get(verifyAdmin, adminController.getDeliverySpotDetails);
+
+// get pickup spots , Teams and order details
+router.route('/pickup').get(verifyAdmin, adminController.getPickupSpot);
+
+// get pickup available Teams and order details by address id
+router
+  .route('/pickup/:id')
+  .get(verifyAdmin, adminController.getPickupSpotDetails);
+
 // supplier route
 
 router

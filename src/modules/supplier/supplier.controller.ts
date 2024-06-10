@@ -11,6 +11,7 @@ import dayjs from 'dayjs';
 import { formatLocalTime } from '../../utils/helpers/timeZone';
 import { PrismaClient } from '@prisma/client';
 import ApiError from '../../utils/errorHandlers/apiError';
+import { getSupplierId } from './supplier.utils';
 const prisma = new PrismaClient();
 
 const getUsers = catchAsync(async (req: Request, res: Response) => {
@@ -46,16 +47,12 @@ const getDeliverySpot = catchAsync(async (req: Request, res: Response) => {
   const page = req.query.page ? Number(req.query.page) : 1;
   const filter = pick(req.query, teamFilters);
   const id = Number(req?.user?.id);
-  const supplierInfo = await prisma.supplierInfo.findFirst({
-    where: {
-      user_id: id,
-    },
-  });
+  const supplier_id = await getSupplierId(id);
 
   const result = await supplierService.getDeliverySpot(
     formatDate.formatDefaultDateAndTime,
     page,
-    { ...filter, supplier_id: supplierInfo?.id }
+    { ...filter, supplier_id }
   );
   sendResponse(res, {
     statusCode: StatusCodes.OK,
@@ -72,19 +69,14 @@ const getDeliverySpotDetails = catchAsync(
     const id = Number(req.params.id);
     const orderDate = req?.query?.date ? req?.query?.date : dayjs(Date.now());
     const formatDate = formatLocalTime(orderDate);
-    const supplier_id = Number(req?.user?.id);
-    const supplierInfo = await prisma.supplierInfo.findFirst({
-      where: {
-        user_id: supplier_id,
-      },
-    });
-    if (!supplierInfo) {
+    const supplier_id = await getSupplierId(id);
+    if (!supplier_id) {
       throw new ApiError(404, 'Supplier not found');
     }
 
     const result = await supplierService.getDeliverySpotDetails(
       formatDate.formatDefaultDateAndTime,
-      { supplier_id: supplierInfo?.id, id }
+      { supplier_id }
     );
     sendResponse(res, {
       statusCode: StatusCodes.OK,
@@ -94,6 +86,21 @@ const getDeliverySpotDetails = catchAsync(
     });
   }
 );
+
+// deliver order
+const deliverOrder = catchAsync(async (req: Request, res: Response) => {
+  const team_id = Number(req.params.id);
+  const id = Number(req.user?.id);
+  const result = await supplierService.deliverOrder(team_id, id);
+  sendResponse(res, {
+    statusCode: StatusCodes.OK,
+    success: true,
+    message: successMessage.deliverOrderSuccess,
+    data: { data: result },
+  });
+});
+
+// get transactions
 
 const getTransactions = catchAsync(async (req: Request, res: Response) => {
   const id = Number(req.user?.id);
@@ -108,17 +115,6 @@ const getTransactions = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
-const deliverOrder = catchAsync(async (req: Request, res: Response) => {
-  const team_id = Number(req.params.id);
-  const id = Number(req.user?.id);
-  const result = await supplierService.deliverOrder(team_id, id);
-  sendResponse(res, {
-    statusCode: StatusCodes.OK,
-    success: true,
-    message: successMessage.deliverOrderSuccess,
-    data: { data: result },
-  });
-});
 //
 
 const getPickupSpot = catchAsync(async (req: Request, res: Response) => {
@@ -127,16 +123,12 @@ const getPickupSpot = catchAsync(async (req: Request, res: Response) => {
   const page = req.query.page ? Number(req.query.page) : 1;
   const filter = pick(req.query, teamFilters);
   const id = Number(req?.user?.id);
-  const supplierInfo = await prisma.supplierInfo.findFirst({
-    where: {
-      user_id: id,
-    },
-  });
+  const supplier_id = await getSupplierId(id);
 
   const result = await supplierService.getPickupSpots(
     formatDate.formatDefaultDateAndTime,
     page,
-    { ...filter, supplier_id: supplierInfo?.id }
+    { ...filter, supplier_id }
   );
   sendResponse(res, {
     statusCode: StatusCodes.OK,

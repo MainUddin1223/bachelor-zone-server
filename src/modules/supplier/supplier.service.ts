@@ -95,6 +95,8 @@ const getUsers = async (pageNumber: number, filterOptions: IFilterOption) => {
   return result;
 };
 
+// get transactions
+
 const getTransactions = async (
   id: number,
   pageNumber: number,
@@ -152,50 +154,19 @@ const getTransactions = async (
       },
     },
   });
+
   const totalCount = await prisma.transaction.count({
     where: {
       receiver_id: id,
       ...queryOption,
     },
   });
+
   const totalPage = totalCount > take ? totalCount / Number(take) : 1;
   return {
     result,
     meta: { page: page, size: take, total: totalCount, totalPage },
   };
-};
-
-const deliverOrder = async (team_id: number, id: number) => {
-  const todayDate = formatLocalTime(new Date());
-  const supplier_id = await getSupplierId(id);
-  const isValidOrder = await prisma.order.findFirst({
-    where: {
-      team_id,
-      supplier_id,
-      status: 'pending',
-      delivery_date: {
-        equals: todayDate.formatDefaultDateAndTime,
-      },
-    },
-  });
-  if (!isValidOrder) {
-    throw new ApiError(400, 'Invalid order');
-  }
-  const result = await prisma.order.updateMany({
-    where: {
-      team_id,
-      status: 'pending',
-      supplier_id,
-      delivery_date: {
-        equals: todayDate.formatDefaultDateAndTime,
-      },
-    },
-    data: {
-      status: 'received',
-      pickup_status: 'enable',
-    },
-  });
-  return result;
 };
 
 const pickBoxes = async (team_id: number, id: number) => {
@@ -456,6 +427,41 @@ const getDeliverySpotDetails = async (date: string, data: any) => {
   };
 
   return finalResult;
+};
+
+// deliver order
+
+const deliverOrder = async (team_id: number, id: number) => {
+  const todayDate = formatLocalTime(new Date());
+  const supplier_id = await getSupplierId(id);
+  const isValidOrder = await prisma.order.findFirst({
+    where: {
+      team_id,
+      supplier_id,
+      status: 'pending',
+      delivery_date: {
+        equals: todayDate.formatDefaultDateAndTime,
+      },
+    },
+  });
+  if (!isValidOrder) {
+    throw new ApiError(400, 'Invalid order');
+  }
+  const result = await prisma.order.updateMany({
+    where: {
+      team_id,
+      status: 'pending',
+      supplier_id,
+      delivery_date: {
+        equals: todayDate.formatDefaultDateAndTime,
+      },
+    },
+    data: {
+      status: 'received',
+      pickup_status: 'enable',
+    },
+  });
+  return result;
 };
 
 //pickup
