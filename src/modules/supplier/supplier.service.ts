@@ -1,97 +1,95 @@
 import { PrismaClient, TransactionType } from '@prisma/client';
 import { IFilterOption } from '../../utils/helpers/interface';
 import { formatLocalTime } from '../../utils/helpers/timeZone';
-import { adminUserService } from '../admin/services/admin.user.service';
 import { pagination } from '../../utils/helpers/pagination';
 import ApiError from '../../utils/errorHandlers/apiError';
 import { getSupplierId } from './supplier.utils';
 
 const prisma = new PrismaClient();
 
-const getTeams = async (id: number, filterOptions: IFilterOption) => {
-  const supplier_id = await getSupplierId(id);
-  const queryOption: { [key: string]: any } = {};
-  const getDate = formatLocalTime(Date.now());
-  if (Object.keys(filterOptions).length) {
-    const { search, ...restOptions } = filterOptions;
+// get user by phone number or name
 
-    if (search) {
-      queryOption['OR'] = [
+const getUsers = async (search: string) => {
+  const result = await prisma.auth.findFirst({
+    where: {
+      OR: [
         {
-          team: {
-            name: {
-              contains: search,
-              mode: 'insensitive',
-            },
-          },
-        },
-        {
-          address: {
-            contains: search,
+          name: {
+            equals: search,
             mode: 'insensitive',
           },
         },
-      ];
-    }
-
-    Object.entries(restOptions).forEach(([field, value]) => {
-      queryOption[field] = value;
-    });
-  }
-
-  const result = await prisma.address.findMany({
-    where: {
-      supplier_id,
-      ...queryOption,
+        {
+          phone: {
+            equals: search,
+            mode: 'insensitive',
+          },
+        },
+      ],
     },
     select: {
-      address: true,
       id: true,
-      Team: {
+      name: true,
+      phone: true,
+      is_deleted: true,
+      UserInfo: {
         select: {
-          due_boxes: true,
-          id: true,
-          member: true,
-          name: true,
-          leader: {
-            select: {
-              name: true,
-              phone: true,
-              id: true,
-            },
-          },
-          order: {
-            where: {
-              delivery_date: getDate.formatDefaultDateAndTime,
-              status: 'pending',
-            },
-          },
+          Balance: true,
+          is_claimed: true,
         },
       },
     },
   });
-
-  // Process the fetched data to the desired format
-  const formattedData = result.flatMap(address =>
-    address.Team.map(team => ({
-      teamName: team.name,
-      address: address.address,
-      leaderName: team.leader.name,
-      leaderPhone: team.leader.phone,
-      id: team.id,
-      totalOrder: team.order.length,
-      member: team.member,
-      dueBoxes: team.due_boxes,
-    }))
-  );
-  return formattedData;
+  if (!result) {
+    throw new ApiError(404, 'User not found');
+  }
+  if (result.is_deleted || !result?.UserInfo[0]?.is_claimed) {
+    throw new ApiError(403, 'Invalid user');
+  }
+  return result;
 };
-const getUsers = async (pageNumber: number, filterOptions: IFilterOption) => {
-  const result = await adminUserService.getUsers(
-    'claimed',
-    pageNumber,
-    filterOptions
-  );
+
+// recharge balance
+const rechargeBalance = async (
+  id: number,
+  receiverId: number,
+  balance: number
+) => {
+  const transaction_type: TransactionType = 'deposit';
+
+  const result = await prisma.$transaction(async tx => {
+    const getUser = await prisma.userInfo.findFirst({
+      where: {
+        user_id: id,
+      },
+    });
+    if (!getUser) {
+      throw new ApiError(404, 'User info not found');
+    }
+    const recharge = await tx.userInfo.update({
+      where: {
+        id: getUser.id,
+      },
+      data: {
+        Balance: balance + Number(getUser.Balance),
+      },
+    });
+    if (!recharge.Balance) {
+      throw new ApiError(500, 'Recharge failed');
+    }
+    await tx.transaction.create({
+      data: {
+        transaction_type,
+        description: 'Balance recharge',
+        amount: balance,
+        user_id: id,
+        status: 'pending',
+        receiver_id: receiverId,
+      },
+    });
+    return { message: 'Recharge successful' };
+  });
+
   return result;
 };
 
@@ -192,49 +190,6 @@ const pickBoxes = async (team_id: number, id: number) => {
       pickup_status: 'received',
     },
   });
-  return result;
-};
-
-const rechargeBalance = async (
-  id: number,
-  receiverId: number,
-  balance: number
-) => {
-  const transaction_type: TransactionType = 'deposit';
-
-  const result = await prisma.$transaction(async tx => {
-    const getUser = await prisma.userInfo.findFirst({
-      where: {
-        user_id: id,
-      },
-    });
-    if (!getUser) {
-      throw new ApiError(404, 'User info not found');
-    }
-    const recharge = await tx.userInfo.update({
-      where: {
-        id: getUser.id,
-      },
-      data: {
-        Balance: balance + Number(getUser.Balance),
-      },
-    });
-    if (!recharge.Balance) {
-      throw new ApiError(500, 'Recharge failed');
-    }
-    await tx.transaction.create({
-      data: {
-        transaction_type,
-        description: 'Balance recharge',
-        amount: balance,
-        user_id: id,
-        status: 'pending',
-        receiver_id: receiverId,
-      },
-    });
-    return { message: 'Recharge successful' };
-  });
-
   return result;
 };
 
@@ -431,9 +386,8 @@ const getDeliverySpotDetails = async (date: string, data: any) => {
 
 // deliver order
 
-const deliverOrder = async (team_id: number, id: number) => {
+const deliverOrder = async (team_id: number, supplier_id: number) => {
   const todayDate = formatLocalTime(new Date());
-  const supplier_id = await getSupplierId(id);
   const isValidOrder = await prisma.order.findFirst({
     where: {
       team_id,
@@ -461,7 +415,11 @@ const deliverOrder = async (team_id: number, id: number) => {
       pickup_status: 'enable',
     },
   });
-  return result;
+  if (result?.count) {
+    return 'Order delivered successfully';
+  } else {
+    throw new ApiError(500, 'Failed to delivered order');
+  }
 };
 
 //pickup
@@ -649,7 +607,6 @@ const getPickupSpotDetails = async (date: string, data: any) => {
 };
 
 export const supplierService = {
-  getTeams,
   getDeliverySpot,
   getDeliverySpotDetails,
   getTransactions,

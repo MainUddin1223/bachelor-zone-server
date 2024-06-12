@@ -9,8 +9,9 @@ import { adminController } from '../admin/controllers/admin.controller';
 const router = express.Router();
 
 //get users
-router.route('/users').get(verifySupplier, supplierController.getUsers);
+router.route('/user').get(verifySupplier, supplierController.getUsers);
 
+//recharge balance
 router
   .route('/recharge')
   .post(verifySupplier, supplierController.rechargeBalance);

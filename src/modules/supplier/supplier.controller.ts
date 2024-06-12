@@ -15,27 +15,16 @@ import { getSupplierId } from './supplier.utils';
 const prisma = new PrismaClient();
 
 const getUsers = catchAsync(async (req: Request, res: Response) => {
-  const page = req.query.page ? Number(req.query.page) : 1;
-  const filter = pick(req.query, teamFilters);
-  const result = await supplierService.getUsers(page, filter);
+  const searchValue = req.query.search?.toString();
+  if (!searchValue) {
+    throw new ApiError(500, 'Bad request');
+  }
+  const result = await supplierService.getUsers(searchValue);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
     message: successMessage.getUsersDataSuccess,
-    data: { data: result },
-  });
-});
-
-const getTeams = catchAsync(async (req: Request, res: Response) => {
-  const id = Number(req.user?.id);
-  // const page = req.query.page ? Number(req.query.page) : 1;
-  const filter = pick(req.query, teamFilters);
-  const result = await supplierService.getTeams(id, filter);
-  sendResponse(res, {
-    statusCode: StatusCodes.OK,
-    success: true,
-    message: successMessage.getTeamDataSuccess,
-    data: { data: result },
+    data: result,
   });
 });
 
@@ -69,14 +58,14 @@ const getDeliverySpotDetails = catchAsync(
     const id = Number(req.params.id);
     const orderDate = req?.query?.date ? req?.query?.date : dayjs(Date.now());
     const formatDate = formatLocalTime(orderDate);
-    const supplier_id = await getSupplierId(id);
+    const supplier_id = await getSupplierId(req?.user?.id);
     if (!supplier_id) {
       throw new ApiError(404, 'Supplier not found');
     }
 
     const result = await supplierService.getDeliverySpotDetails(
       formatDate.formatDefaultDateAndTime,
-      { supplier_id }
+      { supplier_id, id }
     );
     sendResponse(res, {
       statusCode: StatusCodes.OK,
@@ -90,13 +79,14 @@ const getDeliverySpotDetails = catchAsync(
 // deliver order
 const deliverOrder = catchAsync(async (req: Request, res: Response) => {
   const team_id = Number(req.params.id);
-  const id = Number(req.user?.id);
-  const result = await supplierService.deliverOrder(team_id, id);
+  const id = Number(req.params.id);
+  const supplier_id = await getSupplierId(id);
+  const result = await supplierService.deliverOrder(team_id, supplier_id);
   sendResponse(res, {
     statusCode: StatusCodes.OK,
     success: true,
     message: successMessage.deliverOrderSuccess,
-    data: { data: result },
+    data: result,
   });
 });
 
@@ -111,7 +101,7 @@ const getTransactions = catchAsync(async (req: Request, res: Response) => {
     statusCode: StatusCodes.OK,
     success: true,
     message: successMessage.getTeamDataSuccess,
-    data: { data: result },
+    data: result,
   });
 });
 
@@ -195,20 +185,30 @@ const rechargeBalance = catchAsync(async (req: Request, res: Response) => {
       statusCode: StatusCodes.OK,
       success: true,
       message: successMessage.balanceRechargeSuccess,
-      data: { data: result },
+      data: result,
     });
   }
 });
 
 export const supplierController = {
+  // get user by id
   getUsers,
-  getTeams,
-  getDeliverySpot,
+
+  //recharge balance
+  rechargeBalance,
+
+  // get transaction
   getTransactions,
-  deliverOrder,
+
+  // delivery address apis
+  getDeliverySpot,
   getDeliverySpotDetails,
+  deliverOrder,
+  // -----------------
+
+  //pickup boxes apis
   getPickupSpot,
   getPickupSpotDetails,
   pickBoxes,
-  rechargeBalance,
+  // ---------------
 };

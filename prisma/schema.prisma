@@ -8,19 +8,20 @@ datasource db {
 }
 
 model Auth {
-  id           Int            @id @default(autoincrement())
-  phone        String         @unique
-  password     String
-  name         String
-  role         Role           @default(user)
-  is_deleted   Boolean        @default(false)
-  teams        Team[]
-  Order        Order[]
-  Transaction  Transaction[]
-  UserInfo     UserInfo[]
-  createdAt    DateTime       @default(now())
-  updatedAt    DateTime       @updatedAt
-  supplierInfo SupplierInfo[]
+  id                  Int            @id @default(autoincrement())
+  phone               String         @unique
+  password            String
+  name                String
+  role                Role           @default(user)
+  is_password_changed Boolean        @default(false)
+  is_deleted          Boolean        @default(false)
+  teams               Team[]
+  Order               Order[]
+  Transaction         Transaction[]
+  UserInfo            UserInfo[]
+  createdAt           DateTime       @default(now())
+  updatedAt           DateTime       @updatedAt
+  supplierInfo        SupplierInfo[]
 
   @@map("auth")
 }
